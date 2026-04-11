@@ -7,13 +7,18 @@
     "default_popup": "index.html"
   },
   "background": {
-    "service_worker": "src/background.ts",
+    "service_worker": "src/background/index.ts",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content.ts"]
+      "matches": [
+        "*://*.linkedin.com/*",
+        "*://*.naukri.com/*",
+        "*://*.indeed.com/*",
+        "*://*.wellfound.com/*"
+      ],
+      "js": ["src/content/index.ts"]
     }
   ],
   "permissions": [
@@ -21,5 +26,11 @@
     "activeTab",
     "identity",
     "alarms"
+  ],
+  "host_permissions": [
+    "*://*.linkedin.com/*",
+    "*://*.naukri.com/*",
+    "*://*.indeed.com/*",
+    "*://*.wellfound.com/*"
   ]
 }

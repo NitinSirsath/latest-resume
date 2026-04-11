@@ -1,25 +1,34 @@
-import { supabase } from './lib/supabase'
+import { defineExtensionMessaging } from '@webext-core/messaging'
+import { ExtensionMessaging } from '@resumetailor/types'
+import { supabase } from '../lib/supabase'
+import { Session } from '@supabase/supabase-js'
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'LOGIN') {
-    handleOAuthLogin().then(sendResponse)
-    return true
-  }
-  if (message.type === 'GET_SESSION') {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      sendResponse(session)
-    })
-    return true
-  }
-  if (message.type === 'LOGOUT') {
-    supabase.auth.signOut().then(() => sendResponse({ ok: true }))
-    return true
-  }
+const { onMessage } = defineExtensionMessaging<ExtensionMessaging>()
+
+onMessage('GET_SESSION', async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session
 })
 
-async function handleOAuthLogin() {
+onMessage('LOGIN', async () => {
+  return handleOAuthLogin()
+})
+
+onMessage('LOGOUT', async () => {
+  await supabase.auth.signOut()
+})
+
+onMessage('REFRESH_TOKEN', async () => {
+  await supabase.auth.getSession()
+})
+
+onMessage('PORTAL_DETECTED', ({ data: { portal } }) => {
+  console.log(`Portal detected: ${portal}`)
+})
+
+async function handleOAuthLogin(): Promise<{ session?: Session; error?: string }> {
   const redirectUrl = chrome.identity.getRedirectURL('supabase-auth')
-  const provider = 'google' // Or whichever default
+  const provider = 'google'
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
@@ -31,7 +40,7 @@ async function handleOAuthLogin() {
 
   if (error) return { error: error.message }
 
-  const authUrl = data.url
+  const authUrl = data.url!
 
   return new Promise((resolve) => {
     chrome.identity.launchWebAuthFlow(
@@ -57,7 +66,7 @@ async function handleOAuthLogin() {
             refresh_token: refreshToken,
           })
           if (error) resolve({ error: error.message })
-          else resolve({ session: data.session })
+          else resolve({ session: data.session ?? undefined })
         } else {
           resolve({ error: 'Auth tokens not found in redirect URL' })
         }
@@ -66,9 +75,6 @@ async function handleOAuthLogin() {
   })
 }
 
-// Ensure token refresh (heartbeat/alarm)
-// Supabase client handles refresh if initialized. 
-// Adding an alarm to wake up the service worker and check session.
 chrome.alarms.create('check-session', { periodInMinutes: 30 })
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'check-session') {

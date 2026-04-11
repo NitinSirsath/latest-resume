@@ -27,3 +27,5 @@ export interface GapReport {
   analysisId: string
   gaps: string[]
 }
+
+export * from './extension'

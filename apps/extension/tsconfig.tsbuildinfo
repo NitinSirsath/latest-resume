@@ -1,1 +1,1 @@
-{"root":["./src/background.ts","./src/content.ts","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/vite-env.d.ts","./src/background/index.ts","./src/content/index.ts","./src/lib/chrome-storage.ts","./src/lib/supabase.ts","./src/popup/app.tsx","./src/popup/main.tsx","./src/popup/components/dashboard.tsx","./src/popup/components/signin.tsx"],"version":"5.9.3"}
