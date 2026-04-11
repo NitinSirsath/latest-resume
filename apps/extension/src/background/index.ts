@@ -26,6 +26,10 @@ onMessage('PORTAL_DETECTED', ({ data: { portal } }) => {
   console.log(`Portal detected: ${portal}`)
 })
 
+onMessage('JD_SCRAPED', (payload) => {
+  console.log('Background received JD:', payload)
+})
+
 async function handleOAuthLogin(): Promise<{ session?: Session; error?: string }> {
   const redirectUrl = chrome.identity.getRedirectURL('supabase-auth')
   const provider = 'google'
