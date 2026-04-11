@@ -1,4 +1,4 @@
 {
-  "completed": ["01-monorepo-setup"],
-  "current": "02-supabase-schema"
+  "completed": ["01-monorepo-setup", "02-supabase-schema"],
+  "current": "03-auth-flow"
 }
