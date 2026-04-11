@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ResumeTailor",
+  "version": "1.0.0",
+  "description": "Browser extension for ResumeTailor",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.ts"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ]
+}
