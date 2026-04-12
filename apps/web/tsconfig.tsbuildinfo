@@ -1,1 +1,1 @@
-{"root":["./src/main.tsx","./src/routetree.gen.ts","./src/routes/__root.tsx","./src/routes/index.tsx"],"errors":true,"version":"5.9.3"}
+{"root":["./src/main.tsx","./src/routetree.gen.ts","./src/vite-env.d.ts","./src/hooks/useexportmutation.ts","./src/lib/supabase.ts","./src/routes/__root.tsx","./src/routes/dashboard.tsx","./src/routes/index.tsx","./src/routes/login.tsx","./src/routes/tailored.$id.tsx","./src/store/auth.ts"],"version":"5.9.3"}

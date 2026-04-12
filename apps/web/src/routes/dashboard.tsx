@@ -6,12 +6,11 @@ import {
   Button, 
   Card, 
   CardHeader, 
-  CardTitle, 
   CardContent,
   Badge,
   Separator
 } from '@resumetailor/ui'
-import { FileText, History, ExternalLink, Calendar, Target } from 'lucide-react'
+import { FileText, History, ExternalLink, Calendar } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/dashboard')({

@@ -11,6 +11,8 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
+            "@resumetailor/ui": path.resolve(__dirname, "../../packages/ui/src"),
+            "@resumetailor/types": path.resolve(__dirname, "../../packages/types/src"),
         },
     },
 });

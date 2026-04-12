@@ -11,7 +11,7 @@ import {
 import { Session } from '@supabase/supabase-js'
 import { defineExtensionMessaging } from '@webext-core/messaging'
 import { ExtensionMessaging } from '@resumetailor/types'
-import { StorageContext } from '../lib/chrome-storage'
+import { StorageContext } from '../../lib/chrome-storage'
 import { useTailorMutation } from '../hooks/useTailorMutation'
 import { useExportMutation } from '../hooks/useExportMutation'
 import { CheckCircle2, AlertCircle, Loader2, Sparkles, Download } from 'lucide-react'

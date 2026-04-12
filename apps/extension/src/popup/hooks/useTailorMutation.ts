@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { chromeStorage } from '../lib/chrome-storage'
+import { supabase } from '../../lib/supabase'
+import { chromeStorage } from '../../lib/chrome-storage'
 
 export function useTailorMutation() {
   const queryClient = useQueryClient()
@@ -38,7 +38,7 @@ export function useTailorMutation() {
       if (error) throw error
       return data
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data: any) => {
       // Update local storage so UI can transition to DONE
       await chromeStorage.updateContext({ 
         gapReport: data.gapReport, // or whatever metadata we want to persist

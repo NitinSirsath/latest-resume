@@ -22,7 +22,9 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@resumetailor/ui": ["../../packages/ui/src"],
+      "@resumetailor/types": ["../../packages/types/src"]
     }
   },
   "include": ["src"],

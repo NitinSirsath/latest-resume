@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 
 export function useExportMutation() {
   return useMutation({
@@ -18,7 +18,7 @@ export function useExportMutation() {
       if (error) throw error
       return data.url // Signed URL
     },
-    onSuccess: (url) => {
+    onSuccess: (url: string) => {
       // Trigger download
       window.open(url, '_blank')
     }

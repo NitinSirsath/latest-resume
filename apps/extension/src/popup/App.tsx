@@ -4,7 +4,7 @@ import { defineExtensionMessaging } from '@webext-core/messaging'
 import { ExtensionMessaging } from '@resumetailor/types'
 import { SignIn } from './components/SignIn'
 import { Dashboard } from './components/Dashboard'
-import { chromeStorage, StorageContext } from './lib/chrome-storage'
+import { chromeStorage, StorageContext } from '../lib/chrome-storage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
