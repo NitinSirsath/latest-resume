@@ -1,18 +1,24 @@
-# Task 09 — Web dashboard
+# Task 09 — Phase 4: Web Dashboard & History
 
-## Acceptance criteria
-- [ ] / route — landing page (hero + CTA to sign in)
-- [ ] /login — Google OAuth sign in
-- [ ] /dashboard — protected, shows:
-      resume vault (list of uploaded resumes, upload new)
-      tailoring history (list of tailored_resumes rows, with ATS scores)
-- [ ] /tailored/:id — full diff view of a tailored resume:
-      side by side: original vs tailored
-      change_log rendered as highlighted diffs
-      download PDF / DOCX buttons
-- [ ] All data via TanStack Query (useQuery for lists, useMutation for uploads)
-- [ ] TanStack Router file-based routes
+## Goals
+Provide a central hub for users to manage their resumes and view their tailoring history in detail.
 
-## Verify with
-cd apps/web && pnpm dev
-# navigate all routes, check auth redirect works
+## Acceptance Criteria
+- [ ] **Landing Page**:
+    - Update `/` route with a hero section and "Get Started" CTA.
+- [ ] **Dashboard Home**:
+    - Implement `/dashboard` showing:
+        - **Resume Vault**: List of uploaded resumes with "Upload New" functionality.
+        - **Tailoring History**: List of all `tailored_resumes` with ATS scores and dates.
+- [ ] **Tailored View**:
+    - Implement `/tailored/:id` featuring:
+        - Side-by-side comparison of original vs. tailored content.
+        - Strategic highlighting of keywords and changes (Change Log).
+        - Direct download buttons (PDF/DOCX).
+- [ ] **TanStack Router**:
+    - Proper protected route handling (Auth guard).
+
+## Verification
+- Run `pnpm dev` in `apps/web`.
+- Verify history list loads data from Supabase.
+- Verify side-by-side diff view renders accurately.

@@ -1,15 +1,24 @@
-# Task 08 — Extension popup full UI
+# Task 08 — Phase 3: Unified UI & Popup State
 
-## Acceptance criteria
-- [ ] Popup renders in 400x500px window
-- [ ] State machine: LOADING → SIGNED_OUT → NO_RESUME → READY → TAILORING → DONE
-- [ ] SIGNED_OUT: Sign in with Google button
-- [ ] NO_RESUME: upload base resume (PDF/DOCX), calls Supabase Storage upload
-- [ ] READY: shows detected job title + company (from content script), ATS score badge, "Tailor Now" button
-- [ ] TAILORING: progress indicator while edge functions run (3 stages shown)
-- [ ] DONE: shows new ATS score, diff summary (X changes made), download PDF button + copy button
-- [ ] All state via TanStack Query mutations calling edge functions
-- [ ] Uses shadcn: Card, Button, Badge, Progress, Separator
+## Goals
+Transform the extension popup from a static "Signed In" view into a dynamic state machine that guides the user through the tailoring process.
 
-## Verify with
-pnpm build && load extension in Chrome, visit a LinkedIn job page
+## Acceptance Criteria
+- [ ] **Missing UI Components**:
+    - Build `Badge`, `Progress`, and `Separator` in `packages/ui`.
+- [ ] **Popup State Machine**:
+    - Implement the following states in `App.tsx`:
+        - `LOADING`: Initial session check.
+        - `SIGNED_OUT`: Show Google Login button.
+        - `NO_RESUME`: Prompt to upload a base resume (Vault check).
+        - `READY`: Show job title + "Tailor Now" button.
+        - `TAILORING`: Show progress bar (Analyzing → Tailoring).
+        - `DONE`: Show new ATS score and download options.
+- [ ] **TanStack Query Mutations**:
+    - `useMutation` for triggering the edge functions from the popup.
+    - Automatic caching of results in `chrome.storage.session`.
+
+## Verification
+- Build extension: `pnpm build`.
+- Load in Chrome and visit LinkedIn.
+- Verify transition from `READY` to `DONE` via the UI.

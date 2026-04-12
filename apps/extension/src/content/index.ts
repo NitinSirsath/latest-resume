@@ -4,33 +4,55 @@ import { detectPortal, getAdapterForPortal } from './detector';
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>();
 
-async function main() {
+let lastUrl = window.location.href;
+
+async function attemptScrape(retries = 10) {
   const portal = detectPortal();
-  console.log(`[ResumeTailor] Portal detected: ${portal}`);
+  if (portal === 'unknown') return;
 
-  if (portal !== 'unknown') {
-    sendMessage('PORTAL_DETECTED', { portal });
+  const adapter = getAdapterForPortal(portal);
+  if (!adapter) return;
 
-    // Wait for the page to load or content to be ready
-    setTimeout(() => {
-      const adapter = getAdapterForPortal(portal);
-      if (adapter) {
-        const payload = {
-          jobTitle: adapter.getJobTitle(),
-          company: adapter.getCompany(),
-          description: adapter.getDescription(),
-          requirements: adapter.getRequirements(),
-          sourceUrl: window.location.href,
-        };
+  // Check if content is ready
+  const title = adapter.getJobTitle();
+  const desc = adapter.getDescription();
 
-        console.log('[ResumeTailor] JD Scraped:', payload);
-        
-        if (payload.jobTitle || payload.description) {
-          sendMessage('JD_SCRAPED', payload);
-        }
-      }
-    }, 2000); // 2 second delay to wait for SPA renders
+  if (!title && !desc && retries > 0) {
+    console.log(`[ResumeTailor] Content not ready, retrying... (${retries} left)`);
+    setTimeout(() => attemptScrape(retries - 1), 1000);
+    return;
+  }
+
+  const payload = {
+    jobTitle: title,
+    company: adapter.getCompany(),
+    description: desc,
+    requirements: adapter.getRequirements(),
+    sourceUrl: window.location.href,
+  };
+
+  if (payload.jobTitle || payload.description) {
+    console.log('[ResumeTailor] Sending scraped JD:', payload);
+    sendMessage('JD_SCRAPED', payload);
   }
 }
 
-main();
+// Watch for URL changes (SPAs)
+setInterval(() => {
+  if (window.location.href !== lastUrl) {
+    lastUrl = window.location.href;
+    console.log('[ResumeTailor] URL changed, re-detecting...');
+    const portal = detectPortal();
+    if (portal !== 'unknown') {
+      sendMessage('PORTAL_DETECTED', { portal });
+      attemptScrape();
+    }
+  }
+}, 1000);
+
+// Initial detection
+const portal = detectPortal();
+if (portal !== 'unknown') {
+  sendMessage('PORTAL_DETECTED', { portal });
+  attemptScrape();
+}

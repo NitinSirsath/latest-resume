@@ -1,7 +1,5 @@
-export const analyzeJD = async () => {
-  // TODO: Implement JD analysis
-}
+export * from './prompts';
+export * from './schemas';
 
-export const tailorResume = async () => {
-  // TODO: Implement resume tailoring
-}
+// These can be used as type helpers or utility wrappers later.
+export const placeholder = "AI Pipeline initialized";

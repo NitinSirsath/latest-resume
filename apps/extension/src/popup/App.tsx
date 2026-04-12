@@ -4,44 +4,67 @@ import { defineExtensionMessaging } from '@webext-core/messaging'
 import { ExtensionMessaging } from '@resumetailor/types'
 import { SignIn } from './components/SignIn'
 import { Dashboard } from './components/Dashboard'
+import { chromeStorage, StorageContext } from './lib/chrome-storage'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
+const queryClient = new QueryClient()
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null)
+  const [context, setContext] = useState<StorageContext | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
       try {
+        // 1. Get Session
         const currentSession = await sendMessage('GET_SESSION', undefined)
         setSession(currentSession)
+
+        // 2. Get AI Context from storage
+        const currentContext = await chromeStorage.getContext()
+        setContext(currentContext)
       } catch (err) {
-        console.error('Failed to get session', err)
+        console.error('Failed to init popup', err)
       } finally {
         setLoading(false)
       }
     }
+
     init()
+
+    // 3. Listen for storage changes (background updates)
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes['RT_CONTEXT']) {
+        setContext(changes['RT_CONTEXT'].newValue)
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
   }, [])
 
-  if (loading) return <div className="p-8 text-center text-sm">Loading...</div>
+  if (loading) return <div className="p-8 text-center text-sm animate-pulse">Checking status...</div>
 
   return (
-    <div className="w-80 min-h-[300px] bg-slate-50">
-      {session ? (
-        <Dashboard 
-          session={session} 
-          onSignOut={() => setSession(null)} 
-        />
-      ) : (
-        <SignIn 
-          onSuccess={(s) => setSession(s)} 
-          onError={(e) => setError(e)} 
-        />
-      )}
-      {error && <p className="text-[10px] text-red-500 p-2 text-center">{error}</p>}
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="w-80 min-h-[400px] bg-slate-50 border-x border-slate-200">
+        {!session ? (
+          <SignIn 
+            onSuccess={(s) => setSession(s)} 
+            onError={(e) => console.error(e)} 
+          />
+        ) : (
+          <Dashboard 
+            session={session} 
+            context={context}
+            onSignOut={() => {
+              setSession(null)
+              setContext(null)
+            }} 
+          />
+        )}
+      </div>
+    </QueryClientProvider>
   )
 }

@@ -1,23 +1,39 @@
+import { JDPayload, JDAnalysis, GapReport } from '@resumetailor/types'
+
+export interface StorageContext {
+  activeJD?: JDPayload;
+  analysis?: JDAnalysis;
+  gapReport?: GapReport;
+  lastUpdate?: number;
+}
+
 export const chromeStorage = {
-  getItem: (key: string): Promise<string | null> => {
+  getContext: (): Promise<StorageContext | null> => {
     return new Promise((resolve) => {
-      chrome.storage.local.get([key], (result) => {
-        resolve(result[key] || null)
+      chrome.storage.local.get(['RT_CONTEXT'], (result) => {
+        resolve(result['RT_CONTEXT'] || null)
       })
     })
   },
-  setItem: (key: string, value: string): Promise<void> => {
+  
+  setContext: (context: StorageContext): Promise<void> => {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ [key]: value }, () => {
+      chrome.storage.local.set({ 'RT_CONTEXT': { ...context, lastUpdate: Date.now() } }, () => {
         resolve()
       })
     })
   },
-  removeItem: (key: string): Promise<void> => {
+
+  updateContext: async (update: Partial<StorageContext>): Promise<void> => {
+    const current = await chromeStorage.getContext() || {};
+    await chromeStorage.setContext({ ...current, ...update });
+  },
+
+  clearContext: (): Promise<void> => {
     return new Promise((resolve) => {
-      chrome.storage.local.remove([key], () => {
+      chrome.storage.local.remove(['RT_CONTEXT'], () => {
         resolve()
       })
     })
-  },
+  }
 }

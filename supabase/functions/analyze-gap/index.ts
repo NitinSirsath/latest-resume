@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
-import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "../_shared/ai.ts"
+import { ANALYZE_GAP_PROMPT, GAP_REPORT_SCHEMA } from "../_shared/ai.ts"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,50 +10,40 @@ serve(async (req) => {
   }
 
   try {
-    const { base_resume_json, gap_report, jd_analysis, tailored_resume_id } = await req.json()
+    const { resume_json, jd_analysis, tailored_resume_id } = await req.json()
     
     // 1. Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 2. Initialize Gemini (Using Flash for speed as requested)
+    // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: { 
         responseMimeType: "application/json",
-        responseSchema: TAILORED_RESUME_SCHEMA as any
+        responseSchema: GAP_REPORT_SCHEMA as any
       }
     })
 
     // 3. Call Gemini
-    const prompt = `
-      ${TAILOR_RESUME_PROMPT}
-      
-      BASE RESUME: ${JSON.stringify(base_resume_json)}
-      JOB ANALYSIS: ${JSON.stringify(jd_analysis)}
-      GAP REPORT: ${JSON.stringify(gap_report)}
-    `
+    const prompt = `${ANALYZE_GAP_PROMPT}\n\nResume: ${JSON.stringify(resume_json)}\n\nJob Analysis: ${JSON.stringify(jd_analysis)}`
     const result = await model.generateContent(prompt)
-    const tailorResult = JSON.parse(result.response.text())
+    const gapReport = JSON.parse(result.response.text())
 
     // 4. Update Database
     const { error: dbError } = await supabase
       .from('tailored_resumes')
       .update({
-        diff_json: tailorResult.change_log,
-        ats_score: tailorResult.final_ats_score,
-        // We might store the full tailored JSON in a column or just return it
-        // Depending on schema: tailored_resumes.output_url usually points to a PDF
-        // For now, we return it to the frontend which can then trigger PDF export
+        ats_score: gapReport.ats_score_estimate,
       })
       .eq('id', tailored_resume_id)
 
     if (dbError) throw dbError
 
     return new Response(
-      JSON.stringify(tailorResult),
+      JSON.stringify(gapReport),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   } catch (error) {

@@ -1,17 +1,25 @@
-# Task 07 — Gemini resume tailor edge function
+# Task 07 — Phase 1: AI Core (Tailoring)
 
-## Acceptance criteria
-- [ ] supabase/functions/tailor-resume/index.ts — full implementation:
-      accepts POST { base_resume_json, gap_report, jd_analysis, tailored_resume_id }
-      calls Gemini with tailor schema:
-        { tailored_resume: { summary, experience[], skills[] }, change_log[]: { section, original, changed_to, reason }, final_ats_score }
-      updates tailored_resumes row with output
-      returns full tailored resume + change_log
-- [ ] packages/ai-pipeline/index.ts — exports prompt templates as constants:
-      ANALYZE_JD_PROMPT, ANALYZE_GAP_PROMPT, TAILOR_RESUME_PROMPT
-      (edge functions import these — single source of truth for prompts)
-- [ ] packages/ai-pipeline/schemas.ts — exports all Gemini responseSchema objects
+## Goals
+Implement the final stage of the AI pipeline: rewriting the resume content to optimize for the target job description while retaining factual integrity.
 
-## Verify with
-supabase functions serve tailor-resume
-# POST with sample resume JSON and gap report, should return tailored resume + change_log
+## Acceptance Criteria
+- [ ] **Prompt & Schema**:
+    - `packages/ai-pipeline/src/prompts.ts` — constant for TAILOR_RESUME_PROMPT.
+    - `packages/ai-pipeline/src/schemas.ts` — schema including `tailored_resume`, `change_log[]`, and `final_ats_score`.
+- [ ] **Edge Function: `tailor-resume`**:
+    - [ ] Accepts `base_resume_json`, `gap_report`, and `jd_analysis`.
+    - [ ] Calls Gemini with consolidated context.
+    - [ ] Updates `tailored_resumes` row with `diff_json` and `output_url`.
+    - [ ] Returns tailored resume + change log.
+- [ ] **Shared Pipeline**:
+    - Ensure `packages/ai-pipeline/src/index.ts` exports the orchestrator functions used by the edge functions.
+
+## Verification
+```bash
+# Test Tailoring
+curl -X POST http://localhost:54321/functions/v1/tailor-resume \
+  -H "Authorization: Bearer <USER_JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "test-uuid", "resume": {...}, "gap_report": {...}}'
+```
