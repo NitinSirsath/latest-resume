@@ -2,14 +2,38 @@ import { createRootRoute, Link, Outlet, useNavigate } from '@tanstack/react-rout
 import { useAuthStore } from '../store/auth'
 import { Button } from '@resumetailor/ui'
 import { Sparkles, User, LogOut } from 'lucide-react'
+import { useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 export const Route = createRootRoute({
   component: RootContent,
 })
 
 function RootContent() {
-  const { session, signOut } = useAuthStore()
+  const { session, setSession, signOut } = useAuthStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // 1. Initial Session Check
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (s) setSession(s)
+    })
+
+    // 2. Manual Hash Recovery (for cases where redirect fragment isn't caught)
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      supabase.auth.onAuthStateChange((_event, s) => {
+        if (s) setSession(s)
+      })
+    }
+
+    // 3. Global Auth Listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [setSession])
 
   const handleSignOut = async () => {
     await signOut()

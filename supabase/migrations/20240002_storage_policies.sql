@@ -2,7 +2,7 @@
 
 -- 1. Create buckets (resumes for base files, outputs for tailored ones)
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('resumes', 'resumes', false)
+VALUES ('resumes', 'resumes', true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO storage.buckets (id, name, public) 

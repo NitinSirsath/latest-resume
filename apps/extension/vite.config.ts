@@ -16,4 +16,8 @@ export default defineConfig({
       "@resumetailor/types": path.resolve(__dirname, "../../packages/types/src"),
     },
   },
+  server: {
+    port: 5180,
+    strictPort: true,
+  },
 })

@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/auth'
+import { useRef, useState } from 'react'
 import { 
   Button, 
   Card, 
@@ -19,6 +20,61 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
+
+  // 0. Upload Logic
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!user) throw new Error('Not authenticated')
+      setIsUploading(true)
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${Math.random()}.${fileExt}`
+      const filePath = `resumes/${fileName}`
+
+      // 1. Upload to Storage
+      const { error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('resumes')
+        .getPublicUrl(filePath)
+
+      // 2. Insert into DB
+      const { data, error: dbError } = await supabase
+        .from('resumes')
+        .insert({
+          user_id: user.id,
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          file_url: publicUrl,
+          content: 'Pending analysis...', // Placeholder until AI processes it
+        })
+        .select()
+        .single()
+
+      if (dbError) throw dbError
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resumes'] })
+      setIsUploading(false)
+    },
+    onError: (error: any) => {
+      console.error('Upload failed:', error)
+      setIsUploading(false)
+      alert(`Upload failed: ${error.message || 'Unknown error'}`)
+    }
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) uploadMutation.mutate(file)
+  }
 
   // 1. Fetch Resumes (Vault)
   const { data: resumes, isLoading: resumesLoading } = useQuery({
@@ -62,7 +118,20 @@ function Dashboard() {
               <p className="text-sm text-slate-500">Manage your base resumes</p>
             </div>
           </div>
-          <Button className="bg-indigo-600 hover:bg-indigo-700">Upload New Resume</Button>
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="bg-indigo-600 hover:bg-indigo-700"
+          >
+            {isUploading ? 'Uploading...' : 'Upload New Resume'}
+          </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+            accept=".pdf,.doc,.docx"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
