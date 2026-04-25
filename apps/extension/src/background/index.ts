@@ -84,6 +84,9 @@ async function runPipeline(payload: JDPayload, userId: string) {
     
     if (resumes && resumes.length > 0) {
       const baseResume = resumes[0]
+      if (!baseResume.parsed_json) {
+        throw new Error('Your base resume has not been processed yet. Please wait a moment or re-upload it.')
+      }
       
       // Step 3: Analyze Gap
       console.log('[ResumeTailor] Triggering Gap Analysis...')
@@ -100,7 +103,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
       await chromeStorage.updateContext({ gapReport, status: 'COMPLETE' })
     } else {
       console.log('[ResumeTailor] No base resume found in vault.')
-      await chromeStorage.updateContext({ status: 'COMPLETE' })
+      throw new Error('No resume found in your vault. Please upload a resume to the dashboard first!')
     }
 
   } catch (error: any) {
