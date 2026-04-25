@@ -20,7 +20,7 @@ serve(async (req) => {
     // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-flash-latest",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: GAP_REPORT_SCHEMA as any
@@ -28,7 +28,7 @@ serve(async (req) => {
     })
 
     // 3. Call Gemini
-    const prompt = `${ANALYZE_GAP_PROMPT}\n\nResume: ${JSON.stringify(resume_json)}\n\nJob Analysis: ${JSON.stringify(jd_analysis)}`
+    const prompt = `${ANALYZE_GAP_PROMPT}\n\nRESUME JSON:\n${JSON.stringify(resume_json)}\n\nJOB ANALYSIS:\n${JSON.stringify(jd_analysis)}`
     const result = await model.generateContent(prompt)
     const gapReport = JSON.parse(result.response.text())
 

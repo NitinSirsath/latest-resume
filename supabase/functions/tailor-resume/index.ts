@@ -20,7 +20,7 @@ serve(async (req) => {
     // 2. Initialize Gemini (Using Flash for speed as requested)
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-flash-latest",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: TAILORED_RESUME_SCHEMA as any
@@ -28,13 +28,7 @@ serve(async (req) => {
     })
 
     // 3. Call Gemini
-    const prompt = `
-      ${TAILOR_RESUME_PROMPT}
-      
-      BASE RESUME: ${JSON.stringify(base_resume_json)}
-      JOB ANALYSIS: ${JSON.stringify(jd_analysis)}
-      GAP REPORT: ${JSON.stringify(gap_report)}
-    `
+    const prompt = `${TAILOR_RESUME_PROMPT}\n\nBASE RESUME:\n${JSON.stringify(base_resume_json)}\n\nJOB ANALYSIS:\n${JSON.stringify(jd_analysis)}\n\nGAP REPORT:\n${JSON.stringify(gap_report)}`
     const result = await model.generateContent(prompt)
     const tailorResult = JSON.parse(result.response.text())
 

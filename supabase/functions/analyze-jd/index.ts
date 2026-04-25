@@ -21,7 +21,7 @@ serve(async (req) => {
     // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-flash-latest",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: JD_ANALYSIS_SCHEMA as any
@@ -29,32 +29,47 @@ serve(async (req) => {
     })
 
     // 3. Call Gemini
-    const result = await model.generateContent([ANALYZE_JD_PROMPT, jd_text])
-    const analysis = JSON.parse(result.response.text())
+    console.log('[analyze-jd] Calling Gemini AI...')
+    const prompt = `${ANALYZE_JD_PROMPT}\n\nJOB DESCRIPTION:\n${jd_text}`
+    
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+    console.log('[analyze-jd] AI Response received')
+    
+    let analysis
+    try {
+      analysis = JSON.parse(text)
+    } catch (e) {
+      console.error('[analyze-jd] Failed to parse AI response:', text)
+      throw new Error('AI returned invalid JSON')
+    }
 
     // 4. Save to Database
-    // We update tailored_resumes or insert a new one if not exists
-    // For simplicity in this loop, we'll return the analysis and let the caller handle ID creation if needed, 
-    // OR create a placeholder row.
+    console.log('[analyze-jd] Saving to database for user:', user_id)
     const { data: record, error: dbError } = await supabase
       .from('tailored_resumes')
       .insert({
         user_id,
         job_title: analysis.role_title,
-        company: analysis.company || "Unknown", // Schema might need company
+        company: analysis.company || "Unknown",
         jd_raw: jd_text,
         jd_analysis: analysis,
       })
       .select()
       .single()
 
-    if (dbError) throw dbError
+    if (dbError) {
+      console.error('[analyze-jd] Database error:', dbError)
+      throw dbError
+    }
 
+    console.log('[analyze-jd] Success! Record ID:', record.id)
     return new Response(
       JSON.stringify({ analysis, id: record.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   } catch (error) {
+    console.error('[analyze-jd] Top-level error:', error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
