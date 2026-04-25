@@ -13,6 +13,11 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
             "@resumetailor/ui": path.resolve(__dirname, "../../packages/ui/src"),
             "@resumetailor/types": path.resolve(__dirname, "../../packages/types/src"),
+            "@resumetailor/shared": path.resolve(__dirname, "../../packages/shared/src"),
         },
+    },
+    server: {
+        port: 5173,
+        strictPort: true,
     },
 });

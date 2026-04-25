@@ -13,6 +13,12 @@ export default defineConfig({
         alias: {
             "@resumetailor/ui": path.resolve(__dirname, "../../packages/ui/src"),
             "@resumetailor/types": path.resolve(__dirname, "../../packages/types/src"),
+            "@resumetailor/shared": path.resolve(__dirname, "../../packages/shared/src"),
+            "@resumetailor/ai-pipeline": path.resolve(__dirname, "../../packages/ai-pipeline/src"),
         },
+    },
+    server: {
+        port: 5180,
+        strictPort: true,
     },
 });
