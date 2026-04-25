@@ -17,4 +17,5 @@ export interface ExtensionMessaging {
   REFRESH_TOKEN: () => void
   PORTAL_DETECTED: (payload: { portal: PortalType }) => void
   JD_SCRAPED: (payload: JDPayload) => void
+  MANUAL_DETECT: () => { success: boolean; error?: string }
 }

@@ -14,7 +14,8 @@ import { ExtensionMessaging } from '@resumetailor/types'
 import { StorageContext } from '../../lib/chrome-storage'
 import { useTailorMutation } from '../hooks/useTailorMutation'
 import { useExportMutation } from '../hooks/useExportMutation'
-import { CheckCircle2, AlertCircle, Loader2, Sparkles, Download } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, Sparkles, Download, Search } from 'lucide-react'
+import { useState } from 'react'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
 
@@ -27,10 +28,31 @@ interface DashboardProps {
 export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   const tailorMutation = useTailorMutation()
   const exportMutation = useExportMutation()
+  const [manualDetecting, setManualDetecting] = useState(false)
+  const [detectError, setDetectError] = useState<string | null>(null)
 
   const handleSignOut = async () => {
     await sendMessage('LOGOUT', undefined)
     onSignOut()
+  }
+
+  const handleManualDetect = async () => {
+    setManualDetecting(true)
+    setDetectError(null)
+    
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (!tab?.id) throw new Error('No active tab found')
+
+      const res = await sendMessage('MANUAL_DETECT', undefined, tab.id)
+      if (!res?.success) {
+        setDetectError(res?.error || 'Could not detect a job on this page.')
+      }
+    } catch (err: any) {
+      setDetectError(err.message || 'Error communicating with the page.')
+    } finally {
+      setManualDetecting(false)
+    }
   }
 
   // Determine State
@@ -148,11 +170,31 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
               )}
             </div>
           ) : (
-            <div className="py-6 text-center space-y-2">
+            <div className="py-6 text-center space-y-4">
               <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
               <p className="text-xs text-slate-500 px-4">
-                No job description detected. Open a job on LinkedIn to start.
+                No job description detected automatically. 
               </p>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs mt-2" 
+                onClick={handleManualDetect}
+                disabled={manualDetecting}
+              >
+                {manualDetecting ? (
+                  <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Scanning Page...</>
+                ) : (
+                  <><Search className="w-3 h-3 mr-2" /> Detect Job on Page</>
+                )}
+              </Button>
+              
+              {detectError && (
+                <p className="text-[10px] text-red-500 mt-2 bg-red-50 p-1 rounded border border-red-100">
+                  {detectError}
+                </p>
+              )}
             </div>
           )}
         </CardContent>

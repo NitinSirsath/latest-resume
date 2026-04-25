@@ -9,17 +9,23 @@ export class LinkedInAdapter implements BaseAdapter {
       '.topcard__title',
       'h1.t-24',
       'h1',
+      'h2.job-details-jobs-unified-top-card__job-title',
+      '.t-24.t-bold'
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       const text = el?.textContent?.trim();
-      if (text) {
-        console.log(`[ResumeTailor] Job title found via "${sel}":`, text);
-        return text;
-      }
+      if (text) return text;
     }
-    console.warn('[ResumeTailor] Could not find job title on this LinkedIn page');
-    return '';
+    
+    // Simpler fallback: parse document.title
+    // e.g. "Software Engineer at Google | LinkedIn"
+    const docTitle = document.title;
+    if (docTitle && docTitle.includes(' | ')) {
+       return docTitle.split(' | ')[0].trim();
+    }
+    
+    return 'Unknown Job Title';
   }
 
   getCompany(): string {
@@ -31,13 +37,22 @@ export class LinkedInAdapter implements BaseAdapter {
       '.topcard__org-name-link',
       '.topcard__flavor a',
       '[data-test-job-card-company-name]',
+      '.job-details-jobs-unified-top-card__primary-description a'
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       const text = el?.textContent?.trim();
       if (text) return text;
     }
-    return '';
+    
+    // Fallback: Try to get from document.title
+    const docTitle = document.title;
+    if (docTitle && docTitle.includes(' at ')) {
+       const parts = docTitle.split(' at ');
+       return parts[1]?.split(' | ')[0]?.trim() || 'Unknown Company';
+    }
+    
+    return 'Unknown Company';
   }
 
   getDescription(): string {
@@ -48,16 +63,23 @@ export class LinkedInAdapter implements BaseAdapter {
       '.job-details__description',
       '.jobs-box__html-content',
       '.description__text',
+      'article', // very generic
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       const text = el?.textContent?.trim();
-      if (text && text.length > 50) {
-        console.log(`[ResumeTailor] Description found via "${sel}", length: ${text.length}`);
+      if (text && text.length > 100) {
         return text;
       }
     }
-    console.warn('[ResumeTailor] Could not find job description on this LinkedIn page');
+    
+    // Simplest fallback: just grab the innerText of the main tag, or body
+    const main = document.querySelector('main') || document.body;
+    const text = main?.innerText?.trim();
+    if (text && text.length > 100) {
+        return text.substring(0, 5000); // Send the first 5000 chars to AI
+    }
+
     return '';
   }
 

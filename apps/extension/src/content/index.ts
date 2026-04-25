@@ -2,16 +2,16 @@ import { defineExtensionMessaging } from '@webext-core/messaging';
 import { ExtensionMessaging } from '@resumetailor/types';
 import { detectPortal, getAdapterForPortal } from './detector';
 
-const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>();
+const { sendMessage, onMessage } = defineExtensionMessaging<ExtensionMessaging>();
 
 let lastUrl = window.location.href;
 
-async function attemptScrape(retries = 10) {
+async function attemptScrape(retries = 10): Promise<boolean> {
   const portal = detectPortal();
-  if (portal === 'unknown') return;
+  if (portal === 'unknown') return false;
 
   const adapter = getAdapterForPortal(portal);
-  if (!adapter) return;
+  if (!adapter) return false;
 
   // Check if content is ready
   const title = adapter.getJobTitle();
@@ -19,8 +19,8 @@ async function attemptScrape(retries = 10) {
 
   if (!title && !desc && retries > 0) {
     console.log(`[ResumeTailor] Content not ready, retrying... (${retries} left)`);
-    setTimeout(() => attemptScrape(retries - 1), 1000);
-    return;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return attemptScrape(retries - 1);
   }
 
   const payload = {
@@ -34,7 +34,9 @@ async function attemptScrape(retries = 10) {
   if (payload.jobTitle || payload.description) {
     console.log('[ResumeTailor] Sending scraped JD:', payload);
     sendMessage('JD_SCRAPED', payload);
+    return true;
   }
+  return false;
 }
 
 // Watch for URL changes (SPAs)
@@ -56,3 +58,14 @@ if (portal !== 'unknown') {
   sendMessage('PORTAL_DETECTED', { portal });
   attemptScrape();
 }
+
+// Manual trigger from popup
+onMessage('MANUAL_DETECT', async () => {
+  console.log('[ResumeTailor] Manual detection triggered');
+  const portal = detectPortal();
+  if (portal !== 'unknown') {
+    sendMessage('PORTAL_DETECTED', { portal });
+  }
+  const success = await attemptScrape(3); // Less retries for manual to fail fast
+  return { success, error: success ? undefined : 'Could not find job details on this page.' };
+});
