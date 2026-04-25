@@ -1,5 +1,6 @@
 import { defineExtensionMessaging } from '@webext-core/messaging'
-import { ExtensionMessaging } from '@resumetailor/types'
+import { ExtensionMessaging, JDPayload } from '@resumetailor/types'
+import { jobDescriptionSchema } from '@resumetailor/ai-pipeline'
 import { supabase } from '../lib/supabase'
 import { chromeStorage } from '../lib/chrome-storage'
 import { Session } from '@supabase/supabase-js'
@@ -36,58 +37,100 @@ onMessage('JD_SCRAPED', async ({ data: payload }) => {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) {
     console.log('[ResumeTailor] No session, skipping analysis')
-    await chromeStorage.setContext({ activeJD: payload })
+    await chromeStorage.setContext({ activeJD: payload, status: 'IDLE' })
     return
   }
 
+  // 2. Validate JD (Task 3)
+  const validation = jobDescriptionSchema.safeParse(payload)
+  if (!validation.success) {
+    console.error('[ResumeTailor] JD Validation failed:', validation.error.format())
+    await chromeStorage.setContext({ 
+      activeJD: payload, 
+      status: 'VALIDATION_ERROR', 
+      error: validation.error.errors[0].message 
+    })
+    return
+  }
+
+  // 3. Trigger Pipeline (Task 4)
+  runPipeline(payload, session.user.id)
+})
+
+async function runPipeline(payload: JDPayload, userId: string) {
   try {
-    // 2. Initial state in storage
-    await chromeStorage.setContext({ activeJD: payload })
+    await chromeStorage.setContext({ activeJD: payload, status: 'LOADING' })
 
-    // 3. Step 1: Analyze JD
-    console.log('[ResumeTailor] Triggering JD Analysis...');
-    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-jd', {
-      body: { jd_text: payload.description, user_id: session.user.id }
-    });
+    // Step 1: Analyze JD
+    console.log('[ResumeTailor] Triggering JD Analysis...')
+    const analysisData = await withRetry(() => 
+      supabase.functions.invoke('analyze-jd', {
+        body: { jd_text: payload.description, user_id: userId }
+      })
+    , 'analyze-jd')
 
-    if (analysisError) throw analysisError;
-    const { analysis, id: tailoredResumeId } = analysisData;
-    
-    await chromeStorage.updateContext({ analysis });
+    const { analysis, id: tailoredResumeId } = analysisData
+    await chromeStorage.updateContext({ analysis })
 
-    // 4. Step 2: Fetch Base Resume
-    console.log('[ResumeTailor] Fetching latest base resume...');
+    // Step 2: Fetch Base Resume
+    console.log('[ResumeTailor] Fetching latest base resume...')
     const { data: resumes, error: resumeError } = await supabase
       .from('resumes')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1)
 
-    if (resumeError) throw resumeError;
+    if (resumeError) throw resumeError
     
     if (resumes && resumes.length > 0) {
-      const baseResume = resumes[0];
+      const baseResume = resumes[0]
       
-      // 5. Step 3: Analyze Gap
-      console.log('[ResumeTailor] Triggering Gap Analysis...');
-      const { data: gapReport, error: gapError } = await supabase.functions.invoke('analyze-gap', {
-        body: { 
-          resume_json: baseResume.parsed_json, 
-          jd_analysis: analysis, 
-          tailored_resume_id: tailoredResumeId 
-        }
-      });
+      // Step 3: Analyze Gap
+      console.log('[ResumeTailor] Triggering Gap Analysis...')
+      const gapReport = await withRetry(() => 
+        supabase.functions.invoke('analyze-gap', {
+          body: { 
+            resume_json: baseResume.parsed_json, 
+            jd_analysis: analysis, 
+            tailored_resume_id: tailoredResumeId 
+          }
+        })
+      , 'analyze-gap')
 
-      if (gapError) throw gapError;
-      await chromeStorage.updateContext({ gapReport });
+      await chromeStorage.updateContext({ gapReport, status: 'COMPLETE' })
     } else {
-      console.log('[ResumeTailor] No base resume found in vault.');
+      console.log('[ResumeTailor] No base resume found in vault.')
+      await chromeStorage.updateContext({ status: 'COMPLETE' })
     }
 
-  } catch (error) {
-    console.error('[ResumeTailor] Pipeline error:', error);
+  } catch (error: any) {
+    console.error('[ResumeTailor] Pipeline error:', error)
+    await chromeStorage.updateContext({ 
+      status: 'PIPELINE_ERROR', 
+      error: error.message || 'Unknown error',
+      failedAt: error.step || 'unknown'
+    })
   }
-})
+}
+
+async function withRetry(fn: () => Promise<any>, stepName: string, retries = 2): Promise<any> {
+  let lastError: any
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const { data, error } = await fn()
+      if (error) throw error
+      return data
+    } catch (err: any) {
+      lastError = err
+      if (i < retries) {
+        console.log(`[ResumeTailor] Retrying ${stepName} (${i + 1}/${retries})...`)
+        await new Promise(r => setTimeout(r, 1000))
+      }
+    }
+  }
+  if (lastError) lastError.step = stepName
+  throw lastError
+}
 
 // OAuth Logic for Extension
 async function handleOAuthLogin(): Promise<{ session?: Session; error?: string }> {

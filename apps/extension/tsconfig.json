@@ -23,7 +23,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@resumetailor/ui": ["../../packages/ui/src"],
-      "@resumetailor/types": ["../../packages/types/src"]
+      "@resumetailor/types": ["../../packages/types/src"],
+      "@resumetailor/shared": ["../../packages/shared/src"],
+      "@resumetailor/ai-pipeline": ["../../packages/ai-pipeline/src"]
     }
   },
   "include": ["src"],

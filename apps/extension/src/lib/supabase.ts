@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseClient } from '@resumetailor/shared'
 import { chromeStorage } from './chrome-storage'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -8,11 +8,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: chromeStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-})
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, chromeStorage)

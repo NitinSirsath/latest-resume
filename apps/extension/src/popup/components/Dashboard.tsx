@@ -34,8 +34,10 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   }
 
   // Determine State
-  const isAnalyzing = !context?.analysis && !!context?.activeJD
-  const isReady = !!context?.analysis
+  const status = context?.status || 'IDLE'
+  const isAnalyzing = status === 'LOADING'
+  const isReady = !!context?.analysis && status === 'COMPLETE'
+  const isError = status === 'VALIDATION_ERROR' || status === 'PIPELINE_ERROR' || status === 'SAFETY_BLOCKED'
   const isTailoring = tailorMutation.isPending
   const isDone = tailorMutation.isSuccess
 
@@ -73,6 +75,24 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                 <div className="flex items-center gap-2 text-xs text-blue-600 animate-pulse">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Analyzing JD requirements...
+                </div>
+              )}
+
+              {isError && (
+                <div className="bg-red-50 border border-red-100 p-3 rounded-md space-y-2">
+                  <div className="flex items-center gap-2 text-red-700 text-xs font-semibold">
+                    <AlertCircle className="w-4 h-4" />
+                    {status === 'VALIDATION_ERROR' ? 'Data Quality Error' : 
+                     status === 'SAFETY_BLOCKED' ? 'Safety Block' : 'System Error'}
+                  </div>
+                  <p className="text-[10px] text-red-600 leading-relaxed">
+                    {context?.error || 'An unexpected error occurred. Please try again.'}
+                  </p>
+                  {status === 'PIPELINE_ERROR' && context?.failedAt && (
+                    <p className="text-[8px] text-red-400 uppercase font-bold">
+                      Failed at: {context.failedAt}
+                    </p>
+                  )}
                 </div>
               )}
 

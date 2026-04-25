@@ -1,4 +1,26 @@
 {
-  "completed": ["01-monorepo-setup", "02-supabase-schema", "03-auth-flow", "04-extension-scaffold", "05-content-scraper"],
-  "current": "06-ai-analysis-edge-function"
+  "lastUpdated": "2026-04-25T12:48:35Z",
+  "phase": "1",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "status": "complete",
+      "description": "Eliminate supabase.ts duplication by creating packages/shared/src/supabase.ts"
+    },
+    {
+      "id": "TASK-002",
+      "status": "complete",
+      "description": "Add Zod validation on Content Script ingestion in background script"
+    },
+    {
+      "id": "TASK-003",
+      "status": "complete",
+      "description": "Fix background orchestration stale state with try/catch, retries, and status reporting"
+    },
+    {
+      "id": "TASK-004",
+      "status": "complete",
+      "description": "Surface errors (PIPELINE_ERROR, VALIDATION_ERROR, SAFETY_BLOCKED) in the Popup UI"
+    }
+  ]
 }

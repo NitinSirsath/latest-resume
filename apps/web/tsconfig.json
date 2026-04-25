@@ -24,7 +24,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@resumetailor/ui": ["../../packages/ui/src"],
-      "@resumetailor/types": ["../../packages/types/src"]
+      "@resumetailor/types": ["../../packages/types/src"],
+      "@resumetailor/shared": ["../../packages/shared/src"]
     }
   },
   "include": ["src"],

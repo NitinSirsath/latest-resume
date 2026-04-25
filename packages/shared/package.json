@@ -1,5 +1,5 @@
 {
-  "name": "@resumetailor/ai-pipeline",
+  "name": "@resumetailor/shared",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -7,11 +7,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "zod": "^3.22.4"
-  },
   "devDependencies": {
-    "typescript": "^5.2.2",
-    "@resumetailor/types": "workspace:*"
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.42.0"
   }
 }

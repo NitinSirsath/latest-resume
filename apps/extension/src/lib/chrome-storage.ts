@@ -5,6 +5,9 @@ export interface StorageContext {
   analysis?: JDAnalysis;
   gapReport?: GapReport;
   lastUpdate?: number;
+  status?: 'IDLE' | 'LOADING' | 'VALIDATION_ERROR' | 'PIPELINE_ERROR' | 'SAFETY_BLOCKED' | 'COMPLETE';
+  error?: string;
+  failedAt?: string;
 }
 
 export const chromeStorage = {
