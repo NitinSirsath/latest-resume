@@ -63,7 +63,8 @@ export class LinkedInAdapter implements BaseAdapter {
       '.job-details__description',
       '.jobs-box__html-content',
       '.description__text',
-      'article', // very generic
+      '.jobs-description',
+      'main article',
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
@@ -73,11 +74,16 @@ export class LinkedInAdapter implements BaseAdapter {
       }
     }
     
-    // Simplest fallback: just grab the innerText of the main tag, or body
+    // Simplest fallback: grab the main content but avoid the footer/nav
     const main = document.querySelector('main') || document.body;
-    const text = main?.innerText?.trim();
+    // Clone to avoid modifying the actual page
+    const clone = main.cloneNode(true) as HTMLElement;
+    // Remove known noisy elements from the clone
+    clone.querySelectorAll('footer, nav, header, .global-nav, .global-footer, #global-nav, #global-footer').forEach(el => el.remove());
+    
+    const text = clone.innerText?.trim();
     if (text && text.length > 100) {
-        return text.substring(0, 5000); // Send the first 5000 chars to AI
+        return text.substring(0, 5000); 
     }
 
     return '';

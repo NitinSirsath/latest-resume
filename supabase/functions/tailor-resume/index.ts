@@ -20,7 +20,7 @@ serve(async (req) => {
     // 2. Initialize Gemini (Using Flash for speed as requested)
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: TAILORED_RESUME_SCHEMA as any
