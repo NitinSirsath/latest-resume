@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
+import { encodeBase64 } from "https://deno.land/std@0.203.0/encoding/base64.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
 const RESUME_PARSER_PROMPT = `
@@ -28,6 +29,8 @@ serve(async (req) => {
     const { resume_id } = body
     currentResumeId = resume_id
     
+    if (!resume_id) throw new Error('Missing resume_id')
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -43,18 +46,24 @@ serve(async (req) => {
 
     // Mark as processing
     await supabase.from('resumes').update({ processing_status: 'processing' }).eq('id', resume_id)
+    console.log(`[parse-resume] Processing resume: ${resume_id}`)
 
     // 2. Fetch the file content from storage
     console.log('[parse-resume] Fetching PDF from:', resume.file_url)
     const response = await fetch(resume.file_url)
+    if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.statusText}`)
+    
     const arrayBuffer = await response.arrayBuffer()
-    const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-    console.log('[parse-resume] PDF fetched and converted to Base64')
+    const base64Pdf = encodeBase64(arrayBuffer)
+    console.log('[parse-resume] PDF fetched and encoded to Base64 (Size:', arrayBuffer.byteLength, 'bytes)')
 
     // 3. AI Parsing (Gemini can read PDFs directly!)
     console.log('[parse-resume] Sending to Gemini for analysis...')
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    })
     
     const result = await model.generateContent([
       {
@@ -69,7 +78,14 @@ serve(async (req) => {
     const text = result.response.text()
     console.log('[parse-resume] AI response received')
     
-    const parsedJson = JSON.parse(text.replace(/```json|```/g, ''))
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(text)
+    } catch (e) {
+      console.error('[parse-resume] Failed to parse AI response as JSON:', text)
+      // Fallback for cases where Gemini might still wrap in markdown
+      parsedJson = JSON.parse(text.replace(/```json|```/g, ''))
+    }
 
     // 4. Update Database
     console.log('[parse-resume] Updating database with parsed JSON')
@@ -98,13 +114,17 @@ serve(async (req) => {
     
     // Attempt to mark as failed in DB
     if (currentResumeId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      await supabase.from('resumes').update({ 
-        processing_status: 'failed',
-        processing_error: error.message 
-      }).eq('id', currentResumeId)
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        await supabase.from('resumes').update({ 
+          processing_status: 'failed',
+          processing_error: error.message 
+        }).eq('id', currentResumeId)
+      } catch (dbUpdateError) {
+        console.error('[parse-resume] Failed to update error status in DB:', dbUpdateError.message)
+      }
     }
 
     return new Response(
@@ -113,3 +133,4 @@ serve(async (req) => {
     )
   }
 })
+

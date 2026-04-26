@@ -83,21 +83,30 @@ async function runPipeline(payload: JDPayload, userId: string) {
       .order('created_at', { ascending: false })
       .limit(1)
 
-    if (resumeError) throw resumeError
+    if (resumeError) {
+      ;(resumeError as any).step = 'Fetching latest base resume'
+      throw resumeError
+    }
     
     if (resumes && resumes.length > 0) {
       const baseResume = resumes[0]
       
       if (baseResume.processing_status === 'pending' || baseResume.processing_status === 'processing') {
-        throw new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
+        const err: any = new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
+        err.step = 'Fetching latest base resume'
+        throw err
       }
 
       if (baseResume.processing_status === 'failed') {
-        throw new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
+        const err: any = new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
+        err.step = 'Fetching latest base resume'
+        throw err
       }
 
       if (!baseResume.parsed_json) {
-        throw new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
+        const err: any = new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
+        err.step = 'Fetching latest base resume'
+        throw err
       }
       
       // Step 3: Analyze Gap

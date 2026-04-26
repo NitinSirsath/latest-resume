@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-25T12:48:35Z",
+  "lastUpdated": "2026-04-26T19:15:00Z",
   "phase": "1",
   "tasks": [
     {
@@ -21,6 +21,11 @@
       "id": "TASK-004",
       "status": "complete",
       "description": "Surface errors (PIPELINE_ERROR, VALIDATION_ERROR, SAFETY_BLOCKED) in the Popup UI"
+    },
+    {
+      "id": "TASK-005",
+      "status": "complete",
+      "description": "Fix resume stuck in processing state by improving edge function robustness and dashboard error handling"
     }
   ]
 }

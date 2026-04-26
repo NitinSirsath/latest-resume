@@ -62,11 +62,19 @@ function Dashboard() {
 
       // 3. Trigger AI Parsing
       try {
-        await supabase.functions.invoke('parse-resume', {
+        const { error: invokeError } = await supabase.functions.invoke('parse-resume', {
           body: { resume_id: data.id }
         })
-      } catch (parseError) {
-        console.error('AI Parsing failed, but upload succeeded:', parseError)
+        if (invokeError) throw invokeError
+      } catch (parseError: any) {
+        console.error('AI Parsing trigger failed:', parseError)
+        // Mark as failed if the trigger itself fails
+        await supabase.from('resumes')
+          .update({ 
+            processing_status: 'failed', 
+            processing_error: `Failed to trigger analysis: ${parseError.message || 'Unknown error'}` 
+          })
+          .eq('id', data.id)
       }
 
       return data
