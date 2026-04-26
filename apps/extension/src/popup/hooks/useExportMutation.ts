@@ -26,6 +26,10 @@ export function useExportMutation() {
           saveAs: true
         })
       }
+    },
+    onError: (error: any) => {
+      console.error('Export failed:', error)
+      alert(`Export failed: ${error.message || 'Unknown error'}`)
     }
   })
 }
