@@ -23,12 +23,14 @@ function Dashboard() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
 
   // 0. Upload Logic
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!user) throw new Error('Not authenticated')
       setIsUploading(true)
+      setUploadStatus('Uploading to vault...')
 
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Math.random()}.${fileExt}`
@@ -46,6 +48,7 @@ function Dashboard() {
         .getPublicUrl(filePath)
 
       // 2. Insert into DB
+      setUploadStatus('Saving to database...')
       const { data, error: dbError } = await supabase
         .from('resumes')
         .insert({
@@ -60,32 +63,36 @@ function Dashboard() {
 
       if (dbError) throw dbError
 
-      // 3. Trigger AI Parsing
+      // 3. Trigger Parsing
+      setUploadStatus('Processing your resume...')
       try {
         const { error: invokeError } = await supabase.functions.invoke('parse-resume', {
-          body: { resume_id: data.id }
+          body: { 
+            resume_id: data.id,
+            file_url: publicUrl,
+            user_id: user.id
+          }
         })
         if (invokeError) throw invokeError
+        setUploadStatus('Resume ready!')
       } catch (parseError: any) {
-        console.error('AI Parsing trigger failed:', parseError)
-        // Mark as failed if the trigger itself fails
-        await supabase.from('resumes')
-          .update({ 
-            processing_status: 'failed', 
-            processing_error: `Failed to trigger analysis: ${parseError.message || 'Unknown error'}` 
-          })
-          .eq('id', data.id)
+        console.error('[ResumeTailor] Parse error:', parseError)
+        setUploadStatus('Processing failed. Please try uploading again.')
       }
 
       return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resumes'] })
-      setIsUploading(false)
+      setTimeout(() => {
+        setIsUploading(false)
+        setUploadStatus(null)
+      }, 2000)
     },
     onError: (error: any) => {
       console.error('Upload failed:', error)
       setIsUploading(false)
+      setUploadStatus(null)
       alert(`Upload failed: ${error.message || 'Unknown error'}`)
     }
   })
@@ -165,7 +172,7 @@ function Dashboard() {
             disabled={isUploading}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
-            {isUploading ? 'Uploading...' : 'Upload New Resume'}
+            {isUploading ? (uploadStatus || 'Uploading...') : 'Upload New Resume'}
           </Button>
           <input 
             type="file" 

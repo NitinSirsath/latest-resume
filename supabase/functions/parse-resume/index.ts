@@ -1,21 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { GoogleGenerativeAI } from "npm:@google/generative-ai"
-import { encodeBase64 } from "https://deno.land/std@0.203.0/encoding/base64.ts"
+import pdfParse from "npm:pdf-parse/lib/pdf-parse.js"
 import { corsHeaders } from "../_shared/cors.ts"
-
-const RESUME_PARSER_PROMPT = `
-  You are an expert resume parser. Analyze the provided resume text and extract the information into the following JSON schema:
-  
-  {
-    "basics": { "name": "...", "email": "...", "phone": "...", "summary": "..." },
-    "experience": [{ "company": "...", "role": "...", "start": "...", "end": "...", "highlights": ["..."] }],
-    "education": [{ "institution": "...", "degree": "...", "year": "..." }],
-    "skills": ["..."]
-  }
-  
-  Return ONLY the JSON.
-`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,74 +12,47 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { resume_id } = body
+    const { resume_id, file_url, user_id } = body
     currentResumeId = resume_id
     
-    if (!resume_id) throw new Error('Missing resume_id')
+    if (!resume_id || !file_url) throw new Error('Missing resume_id or file_url')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 1. Fetch the resume details
-    const { data: resume, error: fetchError } = await supabase
-      .from('resumes')
-      .select('*')
-      .eq('id', resume_id)
-      .single()
-
-    if (fetchError) throw fetchError
-
-    // Mark as processing
+    // 1. Mark as processing
     await supabase.from('resumes').update({ processing_status: 'processing' }).eq('id', resume_id)
     console.log(`[parse-resume] Processing resume: ${resume_id}`)
 
-    // 2. Fetch the file content from storage
-    console.log('[parse-resume] Fetching PDF from:', resume.file_url)
-    const response = await fetch(resume.file_url)
-    if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.statusText}`)
+    // 2. Download the PDF
+    console.log('[parse-resume] Downloading PDF from:', file_url)
+    const response = await fetch(file_url)
+    if (!response.ok) throw new Error(`Failed to download PDF: ${response.statusText}`)
     
     const arrayBuffer = await response.arrayBuffer()
-    const base64Pdf = encodeBase64(arrayBuffer)
-    console.log('[parse-resume] PDF fetched and encoded to Base64 (Size:', arrayBuffer.byteLength, 'bytes)')
+    const buffer = Buffer.from(arrayBuffer)
+    console.log('[parse-resume] PDF downloaded, size:', arrayBuffer.byteLength, 'bytes')
 
-    // 3. AI Parsing (Gemini can read PDFs directly!)
-    console.log('[parse-resume] Sending to Gemini for analysis...')
-    const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
-    })
+    // 3. Extract text content
+    console.log('[parse-resume] Extracting text with pdf-parse...')
+    const data = await pdfParse(buffer)
+    const rawText = data.text
+    const wordCount = rawText.split(/\s+/).filter(Boolean).length
     
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: base64Pdf,
-          mimeType: "application/pdf"
-        }
-      },
-      RESUME_PARSER_PROMPT
-    ])
-    
-    const text = result.response.text()
-    console.log('[parse-resume] AI response received')
-    
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(text)
-    } catch (e) {
-      console.error('[parse-resume] Failed to parse AI response as JSON:', text)
-      // Fallback for cases where Gemini might still wrap in markdown
-      parsedJson = JSON.parse(text.replace(/```json|```/g, ''))
+    const parsedJson = {
+      raw_text: rawText,
+      word_count: wordCount,
+      parsed_at: new Date().toISOString(),
     }
 
     // 4. Update Database
-    console.log('[parse-resume] Updating database with parsed JSON')
+    console.log('[parse-resume] Updating database with extracted text')
     const { error: updateError } = await supabase
       .from('resumes')
       .update({ 
+        content: rawText,
         parsed_json: parsedJson,
-        content: text, 
         processing_status: 'completed',
         processing_error: null
       })
@@ -104,13 +63,13 @@ serve(async (req) => {
       throw updateError
     }
 
-    console.log('[parse-resume] Success!')
+    console.log('[parse-resume] Success! Word count:', wordCount)
     return new Response(
-      JSON.stringify({ success: true, data: parsedJson }),
+      JSON.stringify({ success: true, resume_id, word_count: wordCount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error) {
-    console.error('[parse-resume] Top-level error:', error.message)
+  } catch (error: any) {
+    console.error('[parse-resume] Error:', error.message)
     
     // Attempt to mark as failed in DB
     if (currentResumeId) {
@@ -122,7 +81,7 @@ serve(async (req) => {
           processing_status: 'failed',
           processing_error: error.message 
         }).eq('id', currentResumeId)
-      } catch (dbUpdateError) {
+      } catch (dbUpdateError: any) {
         console.error('[parse-resume] Failed to update error status in DB:', dbUpdateError.message)
       }
     }
@@ -133,4 +92,3 @@ serve(async (req) => {
     )
   }
 })
-
