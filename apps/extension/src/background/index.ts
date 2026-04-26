@@ -64,9 +64,11 @@ async function runPipeline(payload: JDPayload, userId: string) {
     // Step 1: Analyze JD
     console.log('[ResumeTailor] Triggering JD Analysis...')
     await chromeStorage.updateContext({ status: 'LOADING', reasoning: 'Extracting job requirements and keywords...' })
+    const cleanedDescription = payload.description.replace(/\s+/g, ' ').trim().substring(0, 5000)
+    
     const analysisData = await withRetry(() => 
       supabase.functions.invoke('analyze-jd', {
-        body: { jd_text: payload.description, user_id: userId }
+        body: { jd_text: cleanedDescription, user_id: userId }
       })
     , 'analyze-jd')
 
@@ -85,8 +87,17 @@ async function runPipeline(payload: JDPayload, userId: string) {
     
     if (resumes && resumes.length > 0) {
       const baseResume = resumes[0]
+      
+      if (baseResume.processing_status === 'pending' || baseResume.processing_status === 'processing') {
+        throw new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
+      }
+
+      if (baseResume.processing_status === 'failed') {
+        throw new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
+      }
+
       if (!baseResume.parsed_json) {
-        throw new Error('Your base resume has not been processed yet. Please wait a moment or re-upload it.')
+        throw new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
       }
       
       // Step 3: Analyze Gap

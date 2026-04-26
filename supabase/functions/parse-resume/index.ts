@@ -35,6 +35,11 @@ serve(async (req) => {
       .eq('id', resume_id)
       .single()
 
+    if (fetchError) throw fetchError
+
+    // Mark as processing
+    await supabase.from('resumes').update({ processing_status: 'processing' }).eq('id', resume_id)
+
     // 2. Fetch the file content from storage
     console.log('[parse-resume] Fetching PDF from:', resume.file_url)
     const response = await fetch(resume.file_url)
@@ -45,7 +50,7 @@ serve(async (req) => {
     // 3. AI Parsing (Gemini can read PDFs directly!)
     console.log('[parse-resume] Sending to Gemini for analysis...')
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" })
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
     
     const result = await model.generateContent([
       {
@@ -68,7 +73,9 @@ serve(async (req) => {
       .from('resumes')
       .update({ 
         parsed_json: parsedJson,
-        content: "Parsed via Gemini PDF Vision" 
+        content: text, // Store the full AI response text as raw content
+        processing_status: 'completed',
+        processing_error: null
       })
       .eq('id', resume_id)
 
@@ -84,6 +91,19 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('[parse-resume] Top-level error:', error.message)
+    
+    // Attempt to mark as failed in DB
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { resume_id } = await req.json().catch(() => ({}))
+    if (resume_id) {
+      await supabase.from('resumes').update({ 
+        processing_status: 'failed',
+        processing_error: error.message 
+      }).eq('id', resume_id)
+    }
+
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

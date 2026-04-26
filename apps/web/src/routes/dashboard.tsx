@@ -52,7 +52,8 @@ function Dashboard() {
           user_id: user.id,
           title: file.name.replace(/\.[^/.]+$/, ""),
           file_url: publicUrl,
-          content: 'Pending analysis...', // Placeholder until AI processes it
+          content: 'Pending analysis...', 
+          processing_status: 'pending'
         })
         .select()
         .single()

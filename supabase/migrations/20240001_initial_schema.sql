@@ -44,38 +44,48 @@ ALTER TABLE public.usage_credits ENABLE ROW LEVEL SECURITY;
 -- 5. RLS Policies
 
 -- Resumes: Users can only see/edit their own resumes
-CREATE POLICY "Users can manage their own resumes"
-ON public.resumes
-FOR ALL
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own resumes') THEN
+        CREATE POLICY "Users can manage their own resumes" ON public.resumes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- Tailored Resumes: Users can only see/edit their own tailored resumes
-CREATE POLICY "Users can manage their own tailored resumes"
-ON public.tailored_resumes
-FOR ALL
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own tailored resumes') THEN
+        CREATE POLICY "Users can manage their own tailored resumes" ON public.tailored_resumes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    END IF;
+END $$;
 
--- Usage Credits: Users can only read their own credits (usually system updates them)
-CREATE POLICY "Users can read their own credits"
-ON public.usage_credits
-FOR SELECT
-USING (auth.uid() = user_id);
+-- Usage Credits: Users can only read their own credits
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can read their own credits') THEN
+        CREATE POLICY "Users can read their own credits" ON public.usage_credits FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- 6. Trigger to create usage_credits on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.usage_credits (user_id)
-  VALUES (new.id);
+  VALUES (new.id)
+  ON CONFLICT (user_id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
+        CREATE TRIGGER on_auth_user_created
+          AFTER INSERT ON auth.users
+          FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+    END IF;
+END $$;
 
 -- 7. Updated at trigger for resumes
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -86,6 +96,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER on_resume_updated
-  BEFORE UPDATE ON public.resumes
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_resume_updated') THEN
+        CREATE TRIGGER on_resume_updated
+          BEFORE UPDATE ON public.resumes
+          FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+    END IF;
+END $$;
