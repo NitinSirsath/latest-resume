@@ -19,8 +19,13 @@ export function useExportMutation() {
       return data.url // Signed URL
     },
     onSuccess: (url: string) => {
-      // Trigger download
-      window.open(url, '_blank')
+      if (url) {
+        chrome.downloads.download({
+          url: url,
+          filename: 'tailored-resume.pdf',
+          saveAs: true
+        })
+      }
     }
   })
 }
