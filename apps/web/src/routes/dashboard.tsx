@@ -11,7 +11,7 @@ import {
   Badge,
   Separator
 } from '@resumetailor/ui'
-import { FileText, History, ExternalLink, Calendar } from 'lucide-react'
+import { FileText, History, ExternalLink, Calendar, Trash2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/dashboard')({
@@ -78,6 +78,29 @@ function Dashboard() {
       console.error('Upload failed:', error)
       setIsUploading(false)
       alert(`Upload failed: ${error.message || 'Unknown error'}`)
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (resume: any) => {
+      // Extract storage path from public URL
+      // URL format: .../storage/v1/object/public/resumes/USER_ID/FILENAME
+      const parts = resume.file_url.split('/resumes/')
+      const path = parts[parts.length - 1]
+      
+      if (path) {
+        await supabase.storage.from('resumes').remove([path])
+      }
+      
+      const { error } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('id', resume.id)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resumes'] })
     }
   })
 
@@ -165,11 +188,25 @@ function Dashboard() {
                     <Calendar className="w-3 h-3" />
                     {new Date(resume.created_at).toLocaleDateString()}
                   </div>
-                  <Button variant="secondary" size="sm" className="w-full text-xs" asChild>
-                    <a href={resume.file_url} target="_blank" rel="noreferrer">
-                      View Original
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" size="sm" className="flex-1 text-xs" asChild>
+                      <a href={resume.file_url} target="_blank" rel="noreferrer">
+                        View Original
+                      </a>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this resume?')) {
+                          deleteMutation.mutate(resume)
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))
