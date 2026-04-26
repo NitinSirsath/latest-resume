@@ -116,7 +116,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
   }
 }
 
-async function withRetry(fn: () => Promise<any>, stepName: string, retries = 2): Promise<any> {
+async function withRetry(fn: () => Promise<any>, stepName: string, retries = 3): Promise<any> {
   let lastError: any
   for (let i = 0; i <= retries; i++) {
     try {
@@ -125,9 +125,12 @@ async function withRetry(fn: () => Promise<any>, stepName: string, retries = 2):
       return data
     } catch (err: any) {
       lastError = err
+      const isRateLimit = err.message?.includes('429') || err.status === 429 || (err.context?.status === 429)
+      
       if (i < retries) {
-        console.log(`[ResumeTailor] Retrying ${stepName} (${i + 1}/${retries})...`)
-        await new Promise(r => setTimeout(r, 1000))
+        const delay = isRateLimit ? 5000 * (i + 1) : 1000 * (i + 1)
+        console.warn(`[ResumeTailor] ${stepName} attempt ${i + 1} failed (Rate Limit: ${isRateLimit}). Retrying in ${delay}ms...`)
+        await new Promise(r => setTimeout(r, delay))
       }
     }
   }
