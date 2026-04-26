@@ -63,6 +63,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
 
     // Step 1: Analyze JD
     console.log('[ResumeTailor] Triggering JD Analysis...')
+    await chromeStorage.updateContext({ status: 'LOADING', reasoning: 'Extracting job requirements and keywords...' })
     const analysisData = await withRetry(() => 
       supabase.functions.invoke('analyze-jd', {
         body: { jd_text: payload.description, user_id: userId }
@@ -70,7 +71,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
     , 'analyze-jd')
 
     const { analysis, id: tailoredResumeId } = analysisData
-    await chromeStorage.updateContext({ analysis })
+    await chromeStorage.updateContext({ analysis, reasoning: 'Analyzing your resume for the best match...' })
 
     // Step 2: Fetch Base Resume
     console.log('[ResumeTailor] Fetching latest base resume...')
@@ -90,6 +91,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
       
       // Step 3: Analyze Gap
       console.log('[ResumeTailor] Triggering Gap Analysis...')
+      await chromeStorage.updateContext({ reasoning: 'Identifying skill gaps and opportunities...' })
       const gapReport = await withRetry(() => 
         supabase.functions.invoke('analyze-gap', {
           body: { 
@@ -100,7 +102,26 @@ async function runPipeline(payload: JDPayload, userId: string) {
         })
       , 'analyze-gap')
 
-      await chromeStorage.updateContext({ gapReport, status: 'COMPLETE' })
+      await chromeStorage.updateContext({ gapReport, reasoning: 'Rewriting your resume for maximum impact...' })
+
+      // Step 4: Tailor Resume (The Missing Step!)
+      console.log('[ResumeTailor] Triggering Tailoring...')
+      const tailorResult = await withRetry(() => 
+        supabase.functions.invoke('tailor-resume', {
+          body: { 
+            base_resume_json: baseResume.parsed_json, 
+            gap_report: gapReport,
+            jd_analysis: analysis, 
+            tailored_resume_id: tailoredResumeId 
+          }
+        })
+      , 'tailor-resume')
+
+      await chromeStorage.updateContext({ 
+        status: 'COMPLETE', 
+        reasoning: 'Tailoring complete!',
+        tailorResult 
+      })
     } else {
       console.log('[ResumeTailor] No base resume found in vault.')
       throw new Error('No resume found in your vault. Please upload a resume to the dashboard first!')

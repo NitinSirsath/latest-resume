@@ -8,6 +8,11 @@ export interface StorageContext {
   status?: 'IDLE' | 'LOADING' | 'VALIDATION_ERROR' | 'PIPELINE_ERROR' | 'SAFETY_BLOCKED' | 'COMPLETE';
   error?: string;
   failedAt?: string;
+  reasoning?: string;
+  tailorResult?: {
+    tailored_resume: any;
+    matching_explanation?: string;
+  };
 }
 
 export const chromeStorage = {

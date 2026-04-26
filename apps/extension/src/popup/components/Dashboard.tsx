@@ -61,7 +61,7 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   const isReady = !!context?.analysis && status === 'COMPLETE'
   const isError = status === 'VALIDATION_ERROR' || status === 'PIPELINE_ERROR' || status === 'SAFETY_BLOCKED'
   const isTailoring = tailorMutation.isPending
-  const isDone = tailorMutation.isSuccess
+  const isDone = tailorMutation.isSuccess || !!context?.tailorResult
 
   return (
     <div className="p-4 space-y-4">
@@ -94,9 +94,20 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
               </div>
 
               {isAnalyzing && (
-                <div className="flex items-center gap-2 text-xs text-blue-600 animate-pulse">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Analyzing JD requirements...
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    {context?.reasoning || 'AI is thinking...'}
+                  </div>
+                  <Progress 
+                    value={
+                      context?.reasoning?.includes('Extracting') ? 25 :
+                      context?.reasoning?.includes('Analyzing') ? 50 :
+                      context?.reasoning?.includes('Identifying') ? 75 :
+                      context?.reasoning?.includes('Rewriting') ? 90 : 10
+                    } 
+                    className="h-1 bg-indigo-50" 
+                  />
                 </div>
               )}
 
@@ -120,29 +131,29 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
 
               {isReady && !isTailoring && !isDone && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">Match Score</span>
-                    <Badge variant={context.gapReport ? "success" : "outline"}>
+                  <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-100">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase">Match Score</span>
+                    <Badge variant={context.gapReport ? "success" : "outline"} className="text-xs">
                       {context.gapReport?.ats_score_estimate ?? '??'}%
                     </Badge>
                   </div>
                   <Button 
                     onClick={() => tailorMutation.mutate()} 
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 h-8 text-xs"
                   >
                     <Sparkles className="w-3 h-3 mr-2" />
-                    Tailor Resume Now
+                    Optimize Resume Now
                   </Button>
                 </div>
               )}
 
               {isTailoring && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>Rewriting with Gemini Pro...</span>
-                    <span>75%</span>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Fine-tuning your resume experience...
                   </div>
-                  <Progress value={75} className="h-1" />
+                  <Progress value={95} className="h-1 bg-indigo-50" />
                 </div>
               )}
 
@@ -158,7 +169,7 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                   <Button 
                     onClick={() => exportMutation.mutate({ 
                       tailored_id: context.analysis!.id, 
-                      tailored_json: tailorMutation.data?.tailored_resume 
+                      tailored_json: context.tailorResult?.tailored_resume || tailorMutation.data?.tailored_resume 
                     })}
                     disabled={exportMutation.isPending}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
