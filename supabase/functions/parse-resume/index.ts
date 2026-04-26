@@ -36,11 +36,14 @@ serve(async (req) => {
       .single()
 
     // 2. Fetch the file content from storage
+    console.log('[parse-resume] Fetching PDF from:', resume.file_url)
     const response = await fetch(resume.file_url)
     const arrayBuffer = await response.arrayBuffer()
     const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    console.log('[parse-resume] PDF fetched and converted to Base64')
 
     // 3. AI Parsing (Gemini can read PDFs directly!)
+    console.log('[parse-resume] Sending to Gemini for analysis...')
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" })
     
@@ -55,9 +58,12 @@ serve(async (req) => {
     ])
     
     const text = result.response.text()
+    console.log('[parse-resume] AI response received')
+    
     const parsedJson = JSON.parse(text.replace(/```json|```/g, ''))
 
     // 4. Update Database
+    console.log('[parse-resume] Updating database with parsed JSON')
     const { error: updateError } = await supabase
       .from('resumes')
       .update({ 
@@ -66,13 +72,18 @@ serve(async (req) => {
       })
       .eq('id', resume_id)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('[parse-resume] Database update failed:', updateError)
+      throw updateError
+    }
 
+    console.log('[parse-resume] Success!')
     return new Response(
       JSON.stringify({ success: true, data: parsedJson }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   } catch (error) {
+    console.error('[parse-resume] Top-level error:', error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
