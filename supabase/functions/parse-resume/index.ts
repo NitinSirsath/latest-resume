@@ -35,28 +35,34 @@ serve(async (req) => {
       .eq('id', resume_id)
       .single()
 
-    if (fetchError) throw fetchError
-
     // 2. Fetch the file content from storage
-    // Note: In a real app, we'd use a PDF parser library. 
-    // For this prototype, we'll assume the text is already available or use a simple fetch.
     const response = await fetch(resume.file_url)
-    const blob = await response.blob()
-    const text = await blob.text() // Simple fallback: assumes text-based or accessible file
+    const arrayBuffer = await response.arrayBuffer()
+    const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
 
-    // 3. AI Parsing
+    // 3. AI Parsing (Gemini can read PDFs directly!)
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" })
     
-    const result = await model.generateContent([RESUME_PARSER_PROMPT, text])
-    const parsedJson = JSON.parse(result.response.text().replace(/```json|```/g, ''))
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: base64Pdf,
+          mimeType: "application/pdf"
+        }
+      },
+      RESUME_PARSER_PROMPT
+    ])
+    
+    const text = result.response.text()
+    const parsedJson = JSON.parse(text.replace(/```json|```/g, ''))
 
     // 4. Update Database
     const { error: updateError } = await supabase
       .from('resumes')
       .update({ 
         parsed_json: parsedJson,
-        content: text.substring(0, 1000) // Store snippet
+        content: "Parsed via Gemini PDF Vision" 
       })
       .eq('id', resume_id)
 
