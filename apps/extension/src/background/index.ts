@@ -122,6 +122,15 @@ async function runPipeline(payload: JDPayload, userId: string) {
         reasoning: 'Tailoring complete!',
         tailorResult 
       })
+
+      // Send a notification so the user knows it's done!
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: '/icon-128.png', // Fallback to icon
+        title: 'Resume Ready!',
+        message: `Successfully tailored your resume for ${analysis.role_title}. Click the extension to download!`,
+        priority: 2
+      })
     } else {
       console.log('[ResumeTailor] No base resume found in vault.')
       throw new Error('No resume found in your vault. Please upload a resume to the dashboard first!')

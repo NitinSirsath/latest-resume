@@ -28,8 +28,30 @@ serve(async (req) => {
     })
 
     // 3. Call Gemini
-    const prompt = `${TAILOR_RESUME_PROMPT}\n\nBASE RESUME:\n${JSON.stringify(base_resume_json)}\n\nJOB ANALYSIS:\n${JSON.stringify(jd_analysis)}\n\nGAP REPORT:\n${JSON.stringify(gap_report)}`
-    const result = await model.generateContent(prompt)
+    const PROMPT = `
+  You are an ATS optimization expert. Rewrite the provided resume to match the Job Description.
+  
+  STRATEGY:
+  1. Use keywords from the JD Analysis.
+  2. Quantify achievements (use numbers/percentages).
+  3. Keep the tone professional and concise.
+  
+  SCHEMA:
+  - professional_summary: 2-3 sentences.
+  - work_experience: Array of companies with optimized bullets.
+  
+  Return ONLY JSON.
+
+  BASE RESUME:
+  ${JSON.stringify(base_resume_json)}
+
+  JOB ANALYSIS:
+  ${JSON.stringify(jd_analysis)}
+
+  GAP REPORT:
+  ${JSON.stringify(gap_report)}
+`
+    const result = await model.generateContent(PROMPT)
     const tailorResult = JSON.parse(result.response.text())
 
     // 4. Update Database

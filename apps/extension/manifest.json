@@ -26,7 +26,8 @@
     "activeTab",
     "identity",
     "alarms",
-    "downloads"
+    "downloads",
+    "notifications"
   ],
   "host_permissions": [
     "*://*.linkedin.com/*",
