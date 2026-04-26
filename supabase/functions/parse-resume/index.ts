@@ -21,8 +21,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let currentResumeId: string | null = null;
+
   try {
-    const { resume_id } = await req.json()
+    const body = await req.json()
+    const { resume_id } = body
+    currentResumeId = resume_id
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
@@ -73,7 +77,7 @@ serve(async (req) => {
       .from('resumes')
       .update({ 
         parsed_json: parsedJson,
-        content: text, // Store the full AI response text as raw content
+        content: text, 
         processing_status: 'completed',
         processing_error: null
       })
@@ -93,15 +97,14 @@ serve(async (req) => {
     console.error('[parse-resume] Top-level error:', error.message)
     
     // Attempt to mark as failed in DB
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    const { resume_id } = await req.json().catch(() => ({}))
-    if (resume_id) {
+    if (currentResumeId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
+      const supabase = createClient(supabaseUrl, supabaseKey)
       await supabase.from('resumes').update({ 
         processing_status: 'failed',
         processing_error: error.message 
-      }).eq('id', resume_id)
+      }).eq('id', currentResumeId)
     }
 
     return new Response(
