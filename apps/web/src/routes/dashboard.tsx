@@ -58,6 +58,16 @@ function Dashboard() {
         .single()
 
       if (dbError) throw dbError
+
+      // 3. Trigger AI Parsing
+      try {
+        await supabase.functions.invoke('parse-resume', {
+          body: { resume_id: data.id }
+        })
+      } catch (parseError) {
+        console.error('AI Parsing failed, but upload succeeded:', parseError)
+      }
+
       return data
     },
     onSuccess: () => {
