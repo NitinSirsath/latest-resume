@@ -4,8 +4,9 @@ export interface StorageContext {
   activeJD?: JDPayload;
   analysis?: JDAnalysis;
   gapReport?: GapReport;
+  tailoredResumeId?: string;
   lastUpdate?: number;
-  status?: 'IDLE' | 'LOADING' | 'VALIDATION_ERROR' | 'PIPELINE_ERROR' | 'SAFETY_BLOCKED' | 'COMPLETE';
+  status?: 'IDLE' | 'LOADING' | 'VALIDATION_ERROR' | 'PIPELINE_ERROR' | 'SAFETY_BLOCKED' | 'READY' | 'COMPLETE';
   error?: string;
   failedAt?: string;
   reasoning?: string;

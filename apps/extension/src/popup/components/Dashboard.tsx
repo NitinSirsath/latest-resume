@@ -58,10 +58,10 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   // Determine State
   const status = context?.status || 'IDLE'
   const isAnalyzing = status === 'LOADING'
-  const isReady = !!context?.analysis && status === 'COMPLETE'
+  const isReady = status === 'READY' && !!context?.gapReport
   const isError = status === 'VALIDATION_ERROR' || status === 'PIPELINE_ERROR' || status === 'SAFETY_BLOCKED'
   const isTailoring = tailorMutation.isPending
-  const isDone = tailorMutation.isSuccess || !!context?.tailorResult
+  const isDone = status === 'COMPLETE' || !!context?.tailorResult
 
   return (
     <div className="p-4 space-y-4">
@@ -168,7 +168,7 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                   </p>
                   <Button 
                     onClick={() => exportMutation.mutate({ 
-                      tailored_id: context.analysis!.id, 
+                      tailored_id: context.tailoredResumeId!, 
                       tailored_json: context.tailorResult?.tailored_resume || tailorMutation.data?.tailored_resume 
                     })}
                     disabled={exportMutation.isPending}

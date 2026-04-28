@@ -73,7 +73,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
     , 'analyze-jd')
 
     const { analysis, id: tailoredResumeId } = analysisData
-    await chromeStorage.updateContext({ analysis, reasoning: 'Analyzing your resume for the best match...' })
+    await chromeStorage.updateContext({ analysis, tailoredResumeId, reasoning: 'Analyzing your resume for the best match...' })
 
     // Step 2: Fetch Base Resume
     console.log('[ResumeTailor] Fetching latest base resume...')
@@ -88,73 +88,51 @@ async function runPipeline(payload: JDPayload, userId: string) {
       throw resumeError
     }
     
-    if (resumes && resumes.length > 0) {
-      const baseResume = resumes[0]
-      
-      if (baseResume.processing_status === 'pending' || baseResume.processing_status === 'processing') {
-        const err: any = new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
-        err.step = 'Fetching latest base resume'
-        throw err
-      }
-
-      if (baseResume.processing_status === 'failed') {
-        const err: any = new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
-        err.step = 'Fetching latest base resume'
-        throw err
-      }
-
-      if (!baseResume.parsed_json) {
-        const err: any = new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
-        err.step = 'Fetching latest base resume'
-        throw err
-      }
-      
-      // Step 3: Analyze Gap
-      console.log('[ResumeTailor] Triggering Gap Analysis...')
-      await chromeStorage.updateContext({ reasoning: 'Identifying skill gaps and opportunities...' })
-      const gapReport = await withRetry(() => 
-        supabase.functions.invoke('analyze-gap', {
-          body: { 
-            resume_json: baseResume.parsed_json, 
-            jd_analysis: analysis, 
-            tailored_resume_id: tailoredResumeId 
-          }
-        })
-      , 'analyze-gap')
-
-      await chromeStorage.updateContext({ gapReport, reasoning: 'Rewriting your resume for maximum impact...' })
-
-      // Step 4: Tailor Resume (The Missing Step!)
-      console.log('[ResumeTailor] Triggering Tailoring...')
-      const tailorResult = await withRetry(() => 
-        supabase.functions.invoke('tailor-resume', {
-          body: { 
-            base_resume_json: baseResume.parsed_json, 
-            gap_report: gapReport,
-            jd_analysis: analysis, 
-            tailored_resume_id: tailoredResumeId 
-          }
-        })
-      , 'tailor-resume')
-
-      await chromeStorage.updateContext({ 
-        status: 'COMPLETE', 
-        reasoning: 'Tailoring complete!',
-        tailorResult 
-      })
-
-      // Send a notification so the user knows it's done!
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: '/icon-128.png', // Fallback to icon
-        title: 'Resume Ready!',
-        message: `Successfully tailored your resume for ${analysis.role_title}. Click the extension to download!`,
-        priority: 2
-      })
-    } else {
-      console.log('[ResumeTailor] No base resume found in vault.')
+    if (!resumes || resumes.length === 0) {
       throw new Error('No resume found in your vault. Please upload a resume to the dashboard first!')
     }
+
+    const baseResume = resumes[0]
+    
+    if (baseResume.processing_status === 'pending' || baseResume.processing_status === 'processing') {
+      const err: any = new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
+      err.step = 'Fetching latest base resume'
+      throw err
+    }
+
+    if (baseResume.processing_status === 'failed') {
+      const err: any = new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
+      err.step = 'Fetching latest base resume'
+      throw err
+    }
+
+    if (!baseResume.parsed_json) {
+      const err: any = new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
+      err.step = 'Fetching latest base resume'
+      throw err
+    }
+    
+    // Step 3: Analyze Gap
+    console.log('[ResumeTailor] Triggering Gap Analysis...')
+    await chromeStorage.updateContext({ reasoning: 'Identifying skill gaps and opportunities...' })
+    const gapReport = await withRetry(() => 
+      supabase.functions.invoke('analyze-gap', {
+        body: { 
+          resume_json: baseResume.parsed_json, 
+          jd_analysis: analysis, 
+          tailored_resume_id: tailoredResumeId 
+        }
+      })
+    , 'analyze-gap')
+
+    // Pipeline stops here — user triggers tailoring from the popup
+    await chromeStorage.updateContext({ 
+      gapReport, 
+      status: 'READY',
+      reasoning: 'Analysis complete! Click "Optimize Resume Now" to tailor your resume.' 
+    })
+
+    console.log('[ResumeTailor] Pipeline complete — ready for tailoring.')
 
   } catch (error: any) {
     console.error('[ResumeTailor] Pipeline error:', error)

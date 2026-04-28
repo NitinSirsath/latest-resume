@@ -12,10 +12,14 @@ export function useTailorMutation() {
         throw new Error('Analysis context missing')
       }
 
+      if (!context.tailoredResumeId) {
+        throw new Error('Tailored resume record ID missing from context')
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
 
-      // 1. Fetch latest base resume if not in context
+      // 1. Fetch latest base resume
       const { data: resumes } = await supabase
         .from('resumes')
         .select('*')
@@ -26,12 +30,17 @@ export function useTailorMutation() {
         throw new Error('No base resume found')
       }
 
-      // 2. Call the Tailor Resume Edge Function
+      if (!resumes[0].parsed_json) {
+        throw new Error('Base resume has not been parsed yet. Please re-upload.')
+      }
+
+      // 2. Call the Tailor Resume Edge Function with complete data
       const { data, error } = await supabase.functions.invoke('tailor-resume', {
         body: {
           base_resume_json: resumes[0].parsed_json,
+          gap_report: context.gapReport,
           jd_analysis: context.analysis,
-          tailored_resume_id: context.analysis.id // Assuming analyze-jd returns the ID
+          tailored_resume_id: context.tailoredResumeId
         }
       })
 
@@ -39,10 +48,22 @@ export function useTailorMutation() {
       return data
     },
     onSuccess: async (data: any) => {
-      // Update local storage so UI can transition to DONE
+      // Store tailorResult in Chrome Storage so the Dashboard transitions to COMPLETE
       await chromeStorage.updateContext({ 
-        gapReport: data.gapReport, // or whatever metadata we want to persist
+        status: 'COMPLETE',
+        reasoning: 'Tailoring complete!',
+        tailorResult: data
       })
+
+      // Send a notification so the user knows it's done
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: '/icon-128.png',
+        title: 'Resume Ready!',
+        message: `Your resume has been optimized. Click the extension to download!`,
+        priority: 2
+      })
+
       queryClient.invalidateQueries({ queryKey: ['tailor-context'] })
     }
   })

@@ -27,43 +27,31 @@ serve(async (req) => {
       }
     })
 
-    // 3. Call Gemini
-    const PROMPT = `
-  You are an ATS optimization expert. Rewrite the provided resume to match the Job Description.
-  
-  STRATEGY:
-  1. Use keywords from the JD Analysis.
-  2. Quantify achievements (use numbers/percentages).
-  3. Keep the tone professional and concise.
-  
-  SCHEMA:
-  - professional_summary: 2-3 sentences.
-  - work_experience: Array of companies with optimized bullets.
-  
-  Return ONLY JSON.
+    // 3. Call Gemini with the shared prompt template
+    const prompt = `${TAILOR_RESUME_PROMPT}
 
-  BASE RESUME:
-  ${JSON.stringify(base_resume_json)}
+BASE RESUME:
+${JSON.stringify(base_resume_json)}
 
-  JOB ANALYSIS:
-  ${JSON.stringify(jd_analysis)}
+JOB ANALYSIS:
+${JSON.stringify(jd_analysis)}
 
-  GAP REPORT:
-  ${JSON.stringify(gap_report)}
-`
-    const result = await model.generateContent(PROMPT)
+GAP REPORT:
+${JSON.stringify(gap_report)}`
+
+    const result = await model.generateContent(prompt)
     const tailorResult = JSON.parse(result.response.text())
 
-    // 4. Update Database
+    // 4. Update Database — persist full tailored JSON, diff, and ATS score
+    const updatePayload: Record<string, any> = {
+      diff_json: tailorResult.change_log,
+      ats_score: tailorResult.final_ats_score,
+      tailored_json: tailorResult.tailored_resume,
+    }
+
     const { error: dbError } = await supabase
       .from('tailored_resumes')
-      .update({
-        diff_json: tailorResult.change_log,
-        ats_score: tailorResult.final_ats_score,
-        // We might store the full tailored JSON in a column or just return it
-        // Depending on schema: tailored_resumes.output_url usually points to a PDF
-        // For now, we return it to the frontend which can then trigger PDF export
-      })
+      .update(updatePayload)
       .eq('id', tailored_resume_id)
 
     if (dbError) throw dbError
