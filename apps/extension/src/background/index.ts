@@ -150,6 +150,7 @@ async function withRetry(fn: () => Promise<any>, stepName: string, retries = 3):
     try {
       const { data, error } = await fn()
       if (error) throw error
+      if (data && data.error) throw new Error(data.error)
       return data
     } catch (err: any) {
       lastError = err

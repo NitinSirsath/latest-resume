@@ -68,11 +68,11 @@ serve(async (req) => {
       JSON.stringify({ analysis, id: record.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('[analyze-jd] Top-level error:', error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }
 })

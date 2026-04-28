@@ -167,12 +167,17 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                     High match confirmed. Optimized for {context.analysis?.role_title}.
                   </p>
                   <Button 
-                    onClick={() => exportMutation.mutate({ 
-                      tailored_id: context.tailoredResumeId!, 
-                      tailored_json: context.tailorResult?.tailored_resume || tailorMutation.data?.tailored_resume 
-                    })}
+                    onClick={() => {
+                      const result = context?.tailorResult || tailorMutation.data;
+                      const finalJson = result?.tailored_resume || result;
+                      
+                      exportMutation.mutate({ 
+                        tailored_id: context!.tailoredResumeId!, 
+                        tailored_json: finalJson 
+                      })
+                    }}
                     disabled={exportMutation.isPending}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
                   >
                     {exportMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
                     Download Optimized PDF

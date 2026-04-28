@@ -16,6 +16,7 @@ export function useExportMutation() {
       })
 
       if (error) throw error
+      if (data && data.error) throw new Error(data.error)
       return data.url // Signed URL
     },
     onSuccess: (url: string) => {

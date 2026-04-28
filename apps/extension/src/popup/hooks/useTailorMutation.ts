@@ -45,6 +45,7 @@ export function useTailorMutation() {
       })
 
       if (error) throw error
+      if (data && data.error) throw new Error(data.error)
       return data
     },
     onSuccess: async (data: any) => {

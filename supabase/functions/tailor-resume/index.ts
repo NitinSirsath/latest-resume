@@ -60,10 +60,11 @@ ${JSON.stringify(gap_report)}`
       JSON.stringify(tailorResult),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[tailor-resume] Top-level error:', error.message)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }
 })
