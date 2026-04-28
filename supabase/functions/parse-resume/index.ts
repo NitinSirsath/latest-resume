@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import pdfParse from "npm:pdf-parse/lib/pdf-parse.js"
+import * as pdfjsLib from "npm:pdfjs-dist@4.3.136/build/pdf.mjs"
 import { corsHeaders } from "../_shared/cors.ts"
 
 serve(async (req) => {
@@ -31,13 +31,20 @@ serve(async (req) => {
     if (!response.ok) throw new Error(`Failed to download PDF: ${response.statusText}`)
     
     const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
     console.log('[parse-resume] PDF downloaded, size:', arrayBuffer.byteLength, 'bytes')
 
-    // 3. Extract text content
-    console.log('[parse-resume] Extracting text with pdf-parse...')
-    const data = await pdfParse(buffer)
-    const rawText = data.text
+    // 3. Extract text content using pdfjs-dist
+    console.log('[parse-resume] Extracting text with pdfjs-dist...')
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true }).promise;
+    
+    let rawText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item: any) => item.str).join(' ');
+      rawText += pageText + '\n';
+    }
+
     const wordCount = rawText.split(/\s+/).filter(Boolean).length
     
     const parsedJson = {
