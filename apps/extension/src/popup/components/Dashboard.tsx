@@ -144,6 +144,13 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                     <Sparkles className="w-3 h-3 mr-2" />
                     Optimize Resume Now
                   </Button>
+                  
+                  {tailorMutation.isError && (
+                    <div className="mt-2 p-2 bg-red-50 text-red-600 text-[10px] rounded flex gap-2 items-start">
+                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                      <p>{tailorMutation.error?.message || 'Failed to tailor resume'}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -182,6 +189,13 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                     {exportMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
                     Download Optimized PDF
                   </Button>
+                  
+                  {exportMutation.isError && (
+                    <div className="mt-2 p-2 bg-red-50 text-red-600 text-[10px] rounded flex gap-2 items-start">
+                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                      <p>{exportMutation.error?.message || 'Failed to download PDF'}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

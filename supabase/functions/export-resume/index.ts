@@ -47,10 +47,12 @@ serve(async (req) => {
       if (y < 80) { page = pdfDoc.addPage([612, 792]); y = height - 50; }
       page.drawText(`${exp.company} - ${exp.role}`, { x: 50, y, size: 11, font: boldFont })
       y -= 15
-      for (const bullet of exp.bullets) {
-        if (y < 50) { page = pdfDoc.addPage([612, 792]); y = height - 50; }
-        page.drawText(`• ${bullet}`, { x: 60, y, size: 10, font })
-        y -= 12
+      if (Array.isArray(exp.bullets)) {
+        for (const bullet of exp.bullets) {
+          if (y < 50) { page = pdfDoc.addPage([612, 792]); y = height - 50; }
+          page.drawText(`• ${bullet}`, { x: 60, y, size: 10, font })
+          y -= 12
+        }
       }
       y -= 15
     }
