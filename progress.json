@@ -4,8 +4,8 @@
   "overallStatus": "IN_PROGRESS",
   "phases": {
     "1": { "name": "Output Quality Foundation", "status": "COMPLETED", "completedTasks": 4, "totalTasks": 4 },
-    "2": { "name": "Diff Review System", "status": "IN_PROGRESS", "completedTasks": 0, "totalTasks": 6 },
-    "3": { "name": "Polish & Reliability", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 },
+    "2": { "name": "Diff Review System", "status": "COMPLETED", "completedTasks": 6, "totalTasks": 6 },
+    "3": { "name": "Polish & Reliability", "status": "COMPLETED", "completedTasks": 4, "totalTasks": 4 },
     "4": { "name": "Production", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 }
   },
   "tasks": [
@@ -20,6 +20,12 @@
     { "id": "TASK-022", "phase": 2, "status": "complete", "file": "packages/ui/src/components/DiffReviewPanel.tsx", "description": "Create DiffReviewPanel with accept/reject controls", "completedAt": "2026-05-02T01:10:00Z" },
     { "id": "TASK-023", "phase": 2, "status": "complete", "file": "supabase/functions/write-docx/index.ts", "description": "Update write-docx to apply only accepted changes", "completedAt": "2026-05-02T01:12:00Z" },
     { "id": "TASK-024", "phase": 2, "status": "complete", "file": "apps/web/src/routes/review.$id.tsx", "description": "Add diff review route in web dashboard", "completedAt": "2026-05-02T01:14:00Z" },
-    { "id": "TASK-025", "phase": 2, "status": "complete", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": "2026-05-02T01:17:00Z" }
+    { "id": "TASK-025", "phase": 2, "status": "complete", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": "2026-05-02T01:17:00Z" },
+    { "id": "TASK-030", "phase": 3, "status": "complete", "file": "apps/extension/src/popup/components/Dashboard.tsx", "description": "Add retry UI for failed pipeline steps", "completedAt": "2026-05-02T01:30:00Z" },
+    { "id": "TASK-031", "phase": 3, "status": "complete", "file": "apps/web/src/routes/dashboard.tsx", "description": "Add resume version history in dashboard", "completedAt": "2026-05-02T01:30:00Z" },
+    { "id": "TASK-032", "phase": 3, "status": "complete", "file": "supabase/migrations/20260502010000_application_tracking.sql", "description": "Add application tracking (job URL + status)", "completedAt": "2026-05-02T01:35:00Z" },
+    { "id": "TASK-033", "phase": 3, "status": "complete", "file": "scripts/test-pipeline.ts", "description": "Write integration tests for parse-resume and tailor-resume", "completedAt": "2026-05-02T01:36:00Z" },
+    { "id": "TASK-040", "phase": 4, "status": "complete", "file": ".github/workflows/ci.yml", "description": "CI/CD via GitHub Actions", "completedAt": "2026-05-02T01:45:00Z" },
+    { "id": "TASK-043", "phase": 4, "status": "complete", "file": "supabase/migrations/20260502020000_usage_credits.sql", "description": "Usage limits enforcement via usage_credits table", "completedAt": "2026-05-02T01:45:00Z" }
   ]
 }

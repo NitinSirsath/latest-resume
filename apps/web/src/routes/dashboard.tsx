@@ -285,7 +285,14 @@ function Dashboard() {
                     <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors group">
                       <td className="px-4 py-3">
                         <div className="font-bold text-xs">{item.job_title}</div>
-                        <div className="text-[10px] text-muted font-medium">{item.company}</div>
+                        <div className="text-[10px] text-muted font-medium flex items-center gap-1.5">
+                          {item.company}
+                          {item.job_url && (
+                            <a href={item.job_url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center">
+                              <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                            </a>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Badge variant={item.ats_score > 70 ? 'success' : 'secondary'} className="scale-90">

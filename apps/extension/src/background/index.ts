@@ -87,7 +87,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
     
     const analysisData = await withRetry(() => 
       supabase.functions.invoke('analyze-jd', {
-        body: { jd_text: cleanedDescription, user_id: userId }
+        body: { jd_text: cleanedDescription, user_id: userId, job_url: payload.sourceUrl }
       })
     , 'analyze-jd')
 

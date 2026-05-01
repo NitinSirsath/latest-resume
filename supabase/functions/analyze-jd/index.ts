@@ -11,12 +11,29 @@ serve(async (req) => {
   }
 
   try {
-    const { jd_text, user_id } = await req.json()
+    const req_json = await req.json()
+    const { jd_text, user_id } = req_json
     
     // 1. Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!! // Using service role to update/persist
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Check Usage Credits
+    const { data: usage, error: usageError } = await supabase
+      .from('usage_credits')
+      .select('credits')
+      .eq('user_id', user_id)
+      .single()
+
+    if (usageError && usageError.code !== 'PGRST116') { // PGRST116 is no rows returned
+      console.error('[analyze-jd] Usage check error:', usageError)
+      throw new Error('Failed to verify usage credits')
+    }
+
+    if (usage && usage.credits <= 0) {
+      throw new Error('Insufficient credits. Please upgrade your plan.')
+    }
 
     // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
@@ -54,6 +71,8 @@ serve(async (req) => {
         company: analysis.company || "Unknown",
         jd_raw: jd_text,
         jd_analysis: analysis,
+        job_url: req_json.job_url,
+        application_status: 'prepared'
       })
       .select()
       .single()
@@ -62,6 +81,9 @@ serve(async (req) => {
       console.error('[analyze-jd] Database error:', dbError)
       throw dbError
     }
+
+    // Decrement credits
+    await supabase.rpc('decrement_credits', { target_user_id: user_id })
 
     console.log('[analyze-jd] Success! Record ID:', record.id)
     return new Response(

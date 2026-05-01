@@ -64,6 +64,30 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // Check Usage Credits
+    const { data: record } = await supabase
+      .from('tailored_resumes')
+      .select('user_id')
+      .eq('id', tailored_resume_id)
+      .single()
+
+    if (!record?.user_id) throw new Error('Invalid tailored_resume_id')
+
+    const { data: usage, error: usageError } = await supabase
+      .from('usage_credits')
+      .select('credits')
+      .eq('user_id', record.user_id)
+      .single()
+
+    if (usageError && usageError.code !== 'PGRST116') {
+      console.error('[tailor-resume] Usage check error:', usageError)
+      throw new Error('Failed to verify usage credits')
+    }
+
+    if (usage && usage.credits <= 0) {
+      throw new Error('Insufficient credits. Please upgrade your plan.')
+    }
+
     // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
@@ -157,6 +181,9 @@ STRICT RULES:
       .eq('id', tailored_resume_id)
 
     if (dbError) throw dbError
+
+    // Decrement credits
+    await supabase.rpc('decrement_credits', { target_user_id: record.user_id })
 
     return new Response(
       JSON.stringify(tailorResult),

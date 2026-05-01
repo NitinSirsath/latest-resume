@@ -39,6 +39,8 @@ export interface TailoredResume {
   jd_analysis: JDAnalysis
   ats_score: number
   diff_json: Record<string, unknown>
+  job_url?: string
+  application_status?: 'prepared' | 'applied' | 'interviewing' | 'rejected' | 'offer'
   created_at: string
 }
 

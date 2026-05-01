@@ -142,14 +142,22 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
               )}
 
               {isError && (
-                <div className="bg-red-500/5 border border-red-500/20 p-2.5 rounded space-y-1.5 max-h-32 overflow-y-auto">
+                <div className="bg-red-500/5 border border-red-500/20 p-2.5 rounded space-y-2 max-h-32 overflow-y-auto">
                   <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-[10px] font-bold">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    Error
+                    {context?.failedAt ? `Error at ${context.failedAt}` : 'Pipeline Error'}
                   </div>
                   <p className="text-[9px] text-red-500 leading-relaxed font-bold uppercase tracking-tighter">
                     {formatError(context?.error || 'An unexpected error occurred.')}
                   </p>
+                  <Button 
+                    onClick={() => sendMessage('START_ANALYSIS', undefined)} 
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-[10px] h-7 border-red-500/20 text-red-600 hover:bg-red-500/10"
+                  >
+                    Retry Analysis
+                  </Button>
                 </div>
               )}
 
