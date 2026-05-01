@@ -64,13 +64,13 @@ function TailoredDetail() {
           <Button 
             onClick={() => exportMutation.mutate({ 
               tailored_id: detail.id, 
-              tailored_json: detail.tailored_json // Assuming this is available or derived
+              user_id: detail.user_id
             })}
             disabled={exportMutation.isPending}
             className="bg-indigo-600 hover:bg-indigo-700 gap-2"
           >
             {exportMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Download PDF
+            Download DOCX
           </Button>
         </div>
       </div>

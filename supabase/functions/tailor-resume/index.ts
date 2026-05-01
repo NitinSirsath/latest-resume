@@ -28,25 +28,39 @@ serve(async (req) => {
     })
 
     // 3. Call Gemini with the shared prompt template
-    const prompt = `${TAILOR_RESUME_PROMPT}
+    const prompt = `
+${TAILOR_RESUME_PROMPT}
 
-BASE RESUME:
-${JSON.stringify(base_resume_json)}
+ORIGINAL SUMMARY (${base_resume_json.sections?.summary?.word_count || 0} words):
+${base_resume_json.sections?.summary?.text || ''}
+
+ORIGINAL EXPERIENCE:
+${JSON.stringify(base_resume_json.sections?.experience || [], null, 2)}
+
+ORIGINAL SKILLS (flat list):
+${(base_resume_json.sections?.skills?.flat_list || []).join(', ')}
 
 JOB ANALYSIS:
-${JSON.stringify(jd_analysis)}
+${JSON.stringify(jd_analysis, null, 2)}
 
 GAP REPORT:
-${JSON.stringify(gap_report)}`
+${JSON.stringify(gap_report, null, 2)}
+
+STRICT RULES:
+- Summary: maximum ${(base_resume_json.sections?.summary?.word_count || 0) + 5} words
+- Only modify bullets that are directly relevant to the JD
+- Only add skills that appear in the JD analysis
+- Return ONLY changed sections — do not return unchanged content
+- Preserve the candidate's original voice and phrasing style
+`
 
     const result = await model.generateContent(prompt)
     const tailorResult = JSON.parse(result.response.text())
 
     // 4. Update Database — persist full tailored JSON, diff, and ATS score
     const updatePayload: Record<string, any> = {
-      diff_json: tailorResult.change_log,
+      diff_json: tailorResult.tailored_sections,
       ats_score: tailorResult.final_ats_score,
-      tailored_json: tailorResult.tailored_resume,
     }
 
     const { error: dbError } = await supabase

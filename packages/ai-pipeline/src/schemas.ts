@@ -34,22 +34,41 @@ export const GAP_REPORT_SCHEMA = {
 export const TAILORED_RESUME_SCHEMA = {
   type: "object",
   properties: {
-    tailored_resume: {
+    final_ats_score: { type: "integer" },
+    tailored_sections: {
       type: "object",
       properties: {
-        professional_summary: { type: "string" },
-        work_experience: {
+        summary: {
+          type: "object",
+          properties: {
+            revised: { type: "string" },
+            original: { type: "string" },
+            keywords_added: { type: "array", items: { type: "string" } },
+            word_count_delta: { type: "integer" }
+          }
+        },
+        experience: {
           type: "array",
           items: {
             type: "object",
             properties: {
               company: { type: "string" },
-              role: { type: "string" },
-              bullets: { type: "array", items: { type: "string" } }
+              bullets_changed: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    index: { type: "integer" },
+                    original: { type: "string" },
+                    revised: { type: "string" }
+                  }
+                }
+              }
             }
           }
         },
-        skills: { type: "array", items: { type: "string" } }
+        skills_added: { type: "array", items: { type: "string" } },
+        skills_removed: { type: "array", items: { type: "string" } }
       }
     },
     change_log: {
@@ -63,8 +82,7 @@ export const TAILORED_RESUME_SCHEMA = {
           reason: { type: "string" }
         }
       }
-    },
-    final_ats_score: { type: "integer" }
+    }
   },
-  required: ["tailored_resume", "change_log", "final_ats_score"]
+  required: ["final_ats_score", "tailored_sections", "change_log"]
 };

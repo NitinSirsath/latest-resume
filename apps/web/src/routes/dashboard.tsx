@@ -31,6 +31,9 @@ function Dashboard() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!user) throw new Error('Not authenticated')
+      if (!file.name.endsWith('.docx')) {
+        throw new Error('Please upload a .docx file. PDF files are not supported.')
+      }
       setIsUploading(true)
       setUploadStatus('Uploading to vault...')
 
@@ -76,10 +79,11 @@ function Dashboard() {
           }
         })
         if (invokeError) throw invokeError
-        setUploadStatus('Resume ready!')
+        setUploadStatus('Ready!')
       } catch (parseError: any) {
         console.error('[ResumeTailor] Parse error:', parseError)
-        setUploadStatus('Processing failed. Please try uploading again.')
+        setUploadStatus('Processing failed. Please ensure your file is a valid .docx')
+        throw new Error('Processing failed. Please ensure your file is a valid .docx')
       }
 
       return data
@@ -178,19 +182,22 @@ function Dashboard() {
               <p className="text-muted text-[10px] uppercase font-bold tracking-wider">Base resumes</p>
             </div>
           </div>
-          <Button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            size="sm"
-          >
-            {isUploading ? (uploadStatus || 'Uploading...') : 'Upload Resume'}
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              size="sm"
+            >
+              {isUploading ? (uploadStatus || 'Uploading...') : 'Upload Resume (.docx only)'}
+            </Button>
+            <p className="text-muted text-[10px] max-w-[220px] text-right">Upload your resume as a Word document (.docx). We'll tailor it and give you back a .docx file ready to submit.</p>
+          </div>
           <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange} 
             className="hidden" 
-            accept=".pdf,.doc,.docx"
+            accept=".docx"
           />
         </div>
 

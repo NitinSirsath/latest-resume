@@ -27,10 +27,11 @@
       "status": "complete",
       "description": "Fix resume stuck in processing state by creating parse-resume edge function and updating dashboard upload handler"
     },
+    },
     {
-      "id": "TASK-006",
+      "id": "TASK-007",
       "status": "complete",
-      "description": "Implement manual workflow trigger, handle 429 errors, and add global dark mode support"
+      "description": "Replace PDF pipeline with DOCX-native pipeline (parse-resume, tailor-resume, write-docx)"
     }
   ]
 }

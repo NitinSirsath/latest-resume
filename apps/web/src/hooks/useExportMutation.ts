@@ -3,21 +3,22 @@ import { supabase } from '../lib/supabase'
 
 export function useExportMutation() {
   return useMutation({
-    mutationFn: async ({ tailored_id, tailored_json }: { tailored_id: string, tailored_json: any }) => {
-      const { data, error } = await supabase.functions.invoke('export-resume', {
+    mutationFn: async ({ tailored_id, user_id }: { tailored_id: string, user_id: string }) => {
+      const { data, error } = await supabase.functions.invoke('write-docx', {
         body: {
-          id: tailored_id,
-          tailored_resume_json: tailored_json,
-          // user_id is handled via auth on the server side if needed, 
-          // but we pass it for clarity if the function expects it.
+          tailored_resume_id: tailored_id,
+          user_id: user_id
         }
       })
 
       if (error) throw error
-      return data.url // Signed URL
+      return data.output_url
     },
     onSuccess: (url) => {
-      window.open(url, '_blank')
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'tailored-resume.docx'
+      link.click()
     }
   })
 }
