@@ -45,8 +45,8 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
       if (!res?.success) {
         setDetectError(res?.error || 'Could not detect a job on this page.')
       }
-    } catch (err: any) {
-      setDetectError(err.message || 'Error communicating with the page.')
+    } catch (err: unknown) {
+      setDetectError(err instanceof Error ? err.message : 'Error communicating with the page.')
     } finally {
       setManualDetecting(false)
     }
@@ -60,6 +60,8 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   const isError = status === 'VALIDATION_ERROR' || status === 'PIPELINE_ERROR' || status === 'SAFETY_BLOCKED'
   const isTailoring = tailorMutation.isPending
   const isDone = status === 'COMPLETE' || !!context?.tailorResult
+  
+  const requiresReview = isDone && context?.tailorResult?.tailored_resume && !(context.tailorResult.tailored_resume as { output_url?: string }).output_url;
 
   const formatError = (error: string | null) => {
     if (!error) return null
@@ -187,7 +189,32 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                 </div>
               )}
 
-              {isDone && (
+              {isDone && requiresReview && (
+                <div className="space-y-3 bg-indigo-500/5 p-3 rounded border border-indigo-500/20">
+                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Review Required
+                  </div>
+                  <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-tighter leading-tight">
+                    Optimized for {context.analysis?.role_title}. Please review the AI edits.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      // Note: VITE_WEB_URL should be defined in extension env, 
+                      // but we'll use localhost directly for now since it's a dev task, 
+                      // or better yet try to get it from env.
+                      const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5173';
+                      window.open(`${dashboardUrl}/review/${context!.tailoredResumeId}`, '_blank')
+                    }}
+                    size="sm"
+                    className="w-full h-7 text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white"
+                  >
+                    Review & Finalize
+                  </Button>
+                </div>
+              )}
+
+              {isDone && !requiresReview && (
                 <div className="space-y-3 bg-emerald-500/5 p-3 rounded border border-emerald-500/20">
                   <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
                     <CheckCircle2 className="w-3.5 h-3.5" />

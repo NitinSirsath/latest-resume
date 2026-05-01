@@ -11,7 +11,7 @@ export interface StorageContext {
   failedAt?: string;
   reasoning?: string;
   tailorResult?: {
-    tailored_resume: any;
+    tailored_resume: Record<string, unknown>;
     matching_explanation?: string;
   };
 }
