@@ -1,113 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import mammoth from "npm:mammoth@1.8.0"
+import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
-
-function parseDocxIntoSections(rawText: string) {
-  const sections: any = {
-    summary: null,
-    experience: [],
-    skills: { categories: {}, flat_list: [] },
-    education: []
-  };
-
-  const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  
-  let currentSection = '';
-  let currentExp: any = null;
-  let currentEdu: any = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lowerLine = line.toLowerCase();
-
-    if (/^(summary|professional summary|profile|about me)$/i.test(line)) {
-      currentSection = 'summary';
-      sections.summary = { text: '', word_count: 0 };
-      continue;
-    } else if (/^(experience|work experience|employment|career history)$/i.test(line)) {
-      currentSection = 'experience';
-      continue;
-    } else if (/^(skills|technical skills|core competencies|technologies)$/i.test(line)) {
-      currentSection = 'skills';
-      continue;
-    } else if (/^(education|academic|qualification)$/i.test(line)) {
-      currentSection = 'education';
-      continue;
-    }
-
-    if (currentSection === 'summary') {
-      sections.summary.text += (sections.summary.text ? ' ' : '') + line;
-      sections.summary.word_count = sections.summary.text.split(/\s+/).filter(Boolean).length;
-    } else if (currentSection === 'experience') {
-      // detect company: company name followed by role title on next line, and bullet points
-      // We do a simple heuristic: if line doesn't start with bullet and next line doesn't start with bullet, it might be company and title
-      const isBullet = /^[•\-*]/.test(line);
-      if (!isBullet && i + 1 < lines.length && !/^[•\-*]/.test(lines[i + 1])) {
-        // Assume company and title, maybe duration on the same line or next
-        if (currentExp) {
-          sections.experience.push(currentExp);
-        }
-        currentExp = {
-          company: line,
-          title: lines[i + 1],
-          duration: '',
-          bullets: []
-        };
-        i++; // skip next line as it's title
-      } else if (isBullet && currentExp) {
-        currentExp.bullets.push(line.replace(/^[•\-*]\s*/, ''));
-      } else if (currentExp && !isBullet) {
-        // Maybe duration or additional info
-        if (!currentExp.duration) currentExp.duration = line;
-      }
-    } else if (currentSection === 'skills') {
-      // flat list or comma separated
-      const parts = line.split(',').map(s => s.trim()).filter(Boolean);
-      if (parts.length > 1) {
-        parts.forEach(p => {
-          if (!sections.skills.flat_list.includes(p)) sections.skills.flat_list.push(p);
-        });
-      } else {
-        // could be category: skill1, skill2
-        const colonParts = line.split(':');
-        if (colonParts.length > 1) {
-          const category = colonParts[0].trim();
-          const items = colonParts[1].split(',').map(s => s.trim()).filter(Boolean);
-          sections.skills.categories[category] = items;
-          items.forEach(p => {
-            if (!sections.skills.flat_list.includes(p)) sections.skills.flat_list.push(p);
-          });
-        } else {
-          if (!sections.skills.flat_list.includes(line)) sections.skills.flat_list.push(line);
-        }
-      }
-    } else if (currentSection === 'education') {
-      // simplistic parsing
-      if (!currentEdu) {
-        currentEdu = { institution: line, degree: '', year: '' };
-      } else if (!currentEdu.degree) {
-        currentEdu.degree = line;
-      } else if (!currentEdu.year) {
-        currentEdu.year = line;
-        sections.education.push(currentEdu);
-        currentEdu = null;
-      }
-    }
-  }
-
-  if (currentExp) sections.experience.push(currentExp);
-  if (currentEdu) sections.education.push(currentEdu);
-
-  const word_count = rawText.split(/\s+/).filter(Boolean).length;
-
-  return {
-    source_format: "docx",
-    parsed_at: new Date().toISOString(),
-    word_count: word_count,
-    sections: sections
-  };
-}
+import { PARSE_RESUME_PROMPT, RESUME_SECTIONS_SCHEMA } from "@resumetailor/ai-pipeline"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -118,7 +14,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { resume_id, file_url, user_id } = body
+    const { resume_id, file_url } = body
     currentResumeId = resume_id
     
     if (!resume_id || !file_url) throw new Error('Missing resume_id or file_url')
@@ -146,10 +42,33 @@ serve(async (req) => {
     // 3. Extract text content using mammoth
     console.log('[parse-resume] Extracting text with mammoth...')
     const { value: rawText } = await mammoth.extractRawText({ arrayBuffer, buffer })
+    
+    // 4. Parse sections with Gemini
+    console.log('[parse-resume] Calling Gemini to extract sections...')
+    const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash-latest",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: RESUME_SECTIONS_SCHEMA as never
+      }
+    })
 
-    const parsedJson = parseDocxIntoSections(rawText);
+    const result = await model.generateContent(
+      `${PARSE_RESUME_PROMPT}\n\nRESUME TEXT:\n${rawText}`
+    )
+    const sections = JSON.parse(result.response.text())
+    
+    const word_count = rawText.split(/\s+/).filter(Boolean).length;
 
-    // 4. Update Database
+    const parsedJson = {
+      source_format: "docx",
+      parsed_at: new Date().toISOString(),
+      word_count: word_count,
+      sections: sections
+    };
+
+    // 5. Update Database
     console.log('[parse-resume] Updating database with extracted structured data')
     const { error: updateError } = await supabase
       .from('resumes')
@@ -166,13 +85,15 @@ serve(async (req) => {
       throw updateError
     }
 
-    console.log('[parse-resume] Success! Word count:', parsedJson.word_count)
+    console.log('[parse-resume] Success! Word count:', word_count)
     return new Response(
-      JSON.stringify({ success: true, resume_id, word_count: parsedJson.word_count }),
+      JSON.stringify({ data: { success: true, resume_id, word_count } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error: any) {
-    console.error('[parse-resume] Error:', error.message)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[parse-resume] Error:', errorMessage)
     
     // Attempt to mark as failed in DB
     if (currentResumeId) {
@@ -182,15 +103,16 @@ serve(async (req) => {
         const supabase = createClient(supabaseUrl, supabaseKey)
         await supabase.from('resumes').update({ 
           processing_status: 'failed',
-          processing_error: error.message 
+          processing_error: errorMessage 
         }).eq('id', currentResumeId)
-      } catch (dbUpdateError: any) {
-        console.error('[parse-resume] Failed to update error status in DB:', dbUpdateError.message)
+      } catch (dbUpdateError: unknown) {
+        const dbErrorMessage = dbUpdateError instanceof Error ? dbUpdateError.message : String(dbUpdateError);
+        console.error('[parse-resume] Failed to update error status in DB:', dbErrorMessage)
       }
     }
 
     return new Response(
-      JSON.stringify({ error: `[DEBUG] ` + error.message, stack: error.stack }),
+      JSON.stringify({ error: `[DEBUG] ` + errorMessage, code: "INTERNAL_ERROR", stack: errorStack, failedAt: "parse_resume_execution" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }

@@ -90,3 +90,47 @@ export const TAILORED_RESUME_SCHEMA = {
   },
   required: ["final_ats_score", "tailored_sections", "change_log"]
 };
+
+export const RESUME_SECTIONS_SCHEMA = {
+  type: "object",
+  properties: {
+    summary: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
+        word_count: { type: "integer" }
+      }
+    },
+    experience: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          company: { type: "string" },
+          title: { type: "string" },
+          duration: { type: "string" },
+          bullets: { type: "array", items: { type: "string" } }
+        }
+      }
+    },
+    skills: {
+      type: "object",
+      properties: {
+        categories: { type: "object" },
+        flat_list: { type: "array", items: { type: "string" } }
+      }
+    },
+    education: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          institution: { type: "string" },
+          degree: { type: "string" },
+          year: { type: "string" }
+        }
+      }
+    }
+  },
+  required: ["summary", "experience", "skills", "education"]
+};

@@ -32,3 +32,18 @@ Rules:
 6. For every change, provide a reason in max 15 words and assign an impact (high, medium, or low).
 7. The output must be valid JSON matching the requested schema.
 `;
+
+export const PARSE_RESUME_PROMPT = `
+You are a resume parser. Extract the structured content from this resume.
+
+Rules:
+- Extract exactly what is written — do not improve or rephrase anything
+- If a section is missing, return null for that section
+- For experience bullets, extract each bullet as a separate string
+- For skills, group into categories if the resume shows categories,
+  otherwise put everything in "General"
+- Preserve the candidate's exact wording throughout
+- For duration, extract exactly as written (e.g. "Jan 2022 - Present")
+
+Return JSON matching the provided schema exactly.
+`;
