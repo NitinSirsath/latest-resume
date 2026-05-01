@@ -1,37 +1,23 @@
 {
-  "lastUpdated": "2026-04-27T01:15:00Z",
-  "phase": "1",
+  "lastUpdated": "2026-05-02T00:27:00Z",
+  "currentPhase": 1,
+  "overallStatus": "IN_PROGRESS",
+  "phases": {
+    "1": { "name": "Output Quality Foundation", "status": "IN_PROGRESS", "completedTasks": 0, "totalTasks": 4 },
+    "2": { "name": "Diff Review System", "status": "PENDING", "completedTasks": 0, "totalTasks": 6 },
+    "3": { "name": "Polish & Reliability", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 },
+    "4": { "name": "Production", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 }
+  },
   "tasks": [
-    {
-      "id": "TASK-001",
-      "status": "complete",
-      "description": "Eliminate supabase.ts duplication by creating packages/shared/src/supabase.ts"
-    },
-    {
-      "id": "TASK-002",
-      "status": "complete",
-      "description": "Add Zod validation on Content Script ingestion in background script"
-    },
-    {
-      "id": "TASK-003",
-      "status": "complete",
-      "description": "Fix background orchestration stale state with try/catch, retries, and status reporting"
-    },
-    {
-      "id": "TASK-004",
-      "status": "complete",
-      "description": "Surface errors (PIPELINE_ERROR, VALIDATION_ERROR, SAFETY_BLOCKED) in the Popup UI"
-    },
-    {
-      "id": "TASK-005",
-      "status": "complete",
-      "description": "Fix resume stuck in processing state by creating parse-resume edge function and updating dashboard upload handler"
-    },
-    },
-    {
-      "id": "TASK-007",
-      "status": "complete",
-      "description": "Replace PDF pipeline with DOCX-native pipeline (parse-resume, tailor-resume, write-docx)"
-    }
+    { "id": "TASK-010", "phase": 1, "status": "pending", "file": "packages/ai-pipeline/src/prompts.ts", "description": "Upgrade TAILOR_RESUME_PROMPT with quality constraints", "completedAt": null },
+    { "id": "TASK-011", "phase": 1, "status": "pending", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add post-AI validation layer", "completedAt": null },
+    { "id": "TASK-012", "phase": 1, "status": "pending", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add change_id to every change_log entry", "completedAt": null },
+    { "id": "TASK-013", "phase": 1, "status": "pending", "file": "packages/ai-pipeline/src/schemas.ts", "description": "Add reason and impact fields to change schema", "completedAt": null },
+    { "id": "TASK-020", "phase": 2, "status": "pending", "file": "supabase/functions/review-changes/index.ts", "description": "Create review-changes edge function for AI alternatives", "completedAt": null },
+    { "id": "TASK-021", "phase": 2, "status": "pending", "file": "packages/ui/src/components/DiffCard.tsx", "description": "Create DiffCard component with GitHub-style diff", "completedAt": null },
+    { "id": "TASK-022", "phase": 2, "status": "pending", "file": "packages/ui/src/components/DiffReviewPanel.tsx", "description": "Create DiffReviewPanel with accept/reject controls", "completedAt": null },
+    { "id": "TASK-023", "phase": 2, "status": "pending", "file": "supabase/functions/write-docx/index.ts", "description": "Update write-docx to apply only accepted changes", "completedAt": null },
+    { "id": "TASK-024", "phase": 2, "status": "pending", "file": "apps/web/src/routes/review.tsx", "description": "Add diff review route in web dashboard", "completedAt": null },
+    { "id": "TASK-025", "phase": 2, "status": "pending", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": null }
   ]
 }
