@@ -1,8 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import mammoth from "npm:mammoth@1.8.0"
-import { Document, Packer, Paragraph, TextRun, PatchType, patchDocument } from "npm:docx@9.0.2"
+import { Document, Packer, Paragraph, TextRun } from "npm:docx@9.0.2"
 import { corsHeaders } from "../_shared/cors.ts"
+
+// Define strict types instead of any
+interface ReviewDecision {
+  change_id: string;
+  section: string;
+  accepted: boolean;
+  alternative_requested: boolean;
+  final_text: string;
+}
+
+interface ChangeLogEntry {
+  change_id: string;
+  section: string;
+  change_type: string;
+  original: string;
+  changed_to: string;
+  reason: string;
+  impact: string;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { tailored_resume_id, user_id } = await req.json()
+    const { tailored_resume_id, user_id, decisions } = await req.json()
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
@@ -27,10 +46,10 @@ serve(async (req) => {
     if (!tailoredData) throw new Error("Tailored resume not found")
 
     console.log('[write-docx] base_resume_id:', tailoredData.base_resume_id)
-    console.log('[write-docx] resumes join:', JSON.stringify(tailoredData.resumes))
 
     // Get file_url: prefer FK join result, fallback to direct lookup, fallback to latest user resume
-    let fileUrl = (tailoredData.resumes as any)?.file_url
+    const joinedResumes = tailoredData.resumes as { file_url?: string } | undefined
+    let fileUrl = joinedResumes?.file_url
 
     if (!fileUrl && tailoredData.base_resume_id) {
       // Direct lookup using FK
@@ -66,23 +85,17 @@ serve(async (req) => {
     const { value: rawText } = await mammoth.extractRawText({ arrayBuffer, buffer })
     let modifiedText = rawText
 
-    const tailored_sections = tailoredData.diff_json?.sections || {}
+    const changeLog = (tailoredData.diff_json?.log as ChangeLogEntry[]) || []
+    const typedDecisions = (decisions as ReviewDecision[]) || []
 
-    if (tailored_sections.summary?.revised && tailored_sections.summary?.original) {
-      modifiedText = modifiedText.replace(tailored_sections.summary.original, tailored_sections.summary.revised)
-    }
-
-    if (tailored_sections.experience) {
-      tailored_sections.experience.forEach((exp: any) => {
-        if (exp.bullets_changed) {
-          exp.bullets_changed.forEach((bullet: any) => {
-            if (bullet.original && bullet.revised) {
-              modifiedText = modifiedText.replace(bullet.original, bullet.revised)
-            }
-          })
+    typedDecisions.forEach(decision => {
+      if (decision.accepted) {
+        const logEntry = changeLog.find(l => l.change_id === decision.change_id)
+        if (logEntry && logEntry.original && decision.final_text) {
+          modifiedText = modifiedText.replace(logEntry.original, decision.final_text)
         }
-      })
-    }
+      }
+    })
 
     // 4. Build new DOCX
     const paragraphs = modifiedText.split('\n')
@@ -127,13 +140,14 @@ serve(async (req) => {
       .eq('id', tailored_resume_id)
 
     return new Response(
-      JSON.stringify({ success: true, output_url, tailored_resume_id }),
+      JSON.stringify({ data: { success: true, output_url, tailored_resume_id } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error: any) {
-    console.error('[write-docx] Top-level error:', error.message)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[write-docx] Top-level error:', errorMessage)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage, code: "INTERNAL_ERROR", failedAt: "write_docx_execution" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }
