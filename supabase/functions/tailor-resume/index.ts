@@ -108,6 +108,16 @@ STRICT RULES:
       const result = await model.generateContent(promptText)
       const tailorResult = JSON.parse(result.response.text()) as TailorResult
 
+      if (tailorResult.change_log && Array.isArray(tailorResult.change_log)) {
+        tailorResult.change_log = tailorResult.change_log.map((log, index) => {
+          const section = typeof log.section === 'string' ? log.section : 'unknown';
+          return {
+            ...log,
+            change_id: `change_${section.replace(/\W+/g, '_').toLowerCase()}_${index}`
+          };
+        });
+      }
+
       const errorMsg = validateTailorResult(tailorResult, base_resume_json)
       if (errorMsg) {
         console.warn(`[tailor-resume] Validation failed: ${errorMsg}. Retries left: ${retriesLeft}`)
