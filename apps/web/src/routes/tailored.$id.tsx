@@ -111,7 +111,7 @@ function TailoredDetail() {
           Strategic Change Log
         </h3>
         <div className="space-y-3">
-          {detail.diff_json?.log?.map((change: any, idx: number) => (
+          {detail.diff_json?.log?.map((change: { section: string; reason: string; original: string; changed_to: string }, idx: number) => (
             <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex gap-4 shadow-sm">
               <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{idx + 1}</span>

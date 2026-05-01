@@ -46,11 +46,9 @@ serve(async (req) => {
       JSON.stringify(gapReport),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error: any) {
-    console.error("Error in analyze-gap:", error.message)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  } catch (error: unknown) {
+    console.error('[analyze-gap] Error:', error)
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }
 })

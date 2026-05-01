@@ -1,12 +1,13 @@
 import { Button } from '@resumetailor/ui'
 import { defineExtensionMessaging } from '@webext-core/messaging'
 import { ExtensionMessaging } from '@resumetailor/types'
+import { Session } from '@supabase/supabase-js'
 import { useState } from 'react'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
 
 interface SignInProps {
-  onSuccess: (session: any) => void
+  onSuccess: (session: Session) => void
   onError: (error: string) => void
 }
 
@@ -29,9 +30,9 @@ export function SignIn({ onSuccess, onError }: SignInProps) {
       } else {
         setError('Login cancelled or no session returned.')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ResumeTailor] Login failed:', err)
-      setError(err.message || 'Unknown error')
+      setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
       setLoading(false)
     }

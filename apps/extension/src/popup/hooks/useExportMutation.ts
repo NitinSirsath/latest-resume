@@ -27,8 +27,8 @@ export function useExportMutation() {
         })
       }
     },
-    onError: (error: any) => {
-      console.error('Export failed:', error)
+    onError: (error: Error) => {
+      console.error('[ResumeTailor] Export failed:', error)
       alert(`Export failed: ${error.message || 'Unknown error'}`)
     }
   })

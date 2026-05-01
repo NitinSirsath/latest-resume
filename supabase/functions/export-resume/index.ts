@@ -81,11 +81,9 @@ serve(async (req) => {
       JSON.stringify({ url: signedData.signedUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error: any) {
-    console.error('[export-resume] Top-level error:', error.message)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  } catch (error: unknown) {
+    console.error('[export-resume] Error:', error)
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }
 })

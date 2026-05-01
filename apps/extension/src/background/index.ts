@@ -114,19 +114,19 @@ async function runPipeline(payload: JDPayload, userId: string) {
     const baseResume = resumes[0]
     
     if (baseResume.processing_status === 'pending' || baseResume.processing_status === 'processing') {
-      const err: any = new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!')
+      const err = new Error('Your base resume is currently being analyzed by AI. Please wait a few seconds and try again!') as Error & { step?: string }
       err.step = 'Fetching latest base resume'
       throw err
     }
 
     if (baseResume.processing_status === 'failed') {
-      const err: any = new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`)
+      const err = new Error(`Resume parsing failed: ${baseResume.processing_error || 'Unknown error'}. Please try re-uploading your resume.`) as Error & { step?: string }
       err.step = 'Fetching latest base resume'
       throw err
     }
 
     if (!baseResume.parsed_json) {
-      const err: any = new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.')
+      const err = new Error('Your base resume has not been processed yet. Please try re-uploading it to the dashboard.') as Error & { step?: string }
       err.step = 'Fetching latest base resume'
       throw err
     }
@@ -153,27 +153,29 @@ async function runPipeline(payload: JDPayload, userId: string) {
 
     console.log('[ResumeTailor] Pipeline complete — ready for tailoring.')
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[ResumeTailor] Pipeline error:', error)
+    const err = error as Error & { step?: string }
     await chromeStorage.updateContext({ 
       status: 'PIPELINE_ERROR', 
-      error: error.message || 'Unknown error',
-      failedAt: error.step || 'unknown'
+      error: err.message || 'Unknown error',
+      failedAt: err.step || 'unknown'
     })
   }
 }
 
 async function withRetry(fn: () => Promise<any>, stepName: string, retries = 3): Promise<any> {
-  let lastError: any
+  let lastError: Error & { step?: string } | undefined
   for (let i = 0; i <= retries; i++) {
     try {
       const { data, error } = await fn()
       if (error) throw error
       if (data && data.error) throw new Error(data.error)
       return data
-    } catch (err: any) {
-      lastError = err
-      const isRateLimit = err.message?.includes('429') || err.status === 429 || (err.context?.status === 429)
+    } catch (err: unknown) {
+      const errorObj = err as any
+      lastError = errorObj
+      const isRateLimit = errorObj.message?.includes('429') || errorObj.status === 429 || (errorObj.context?.status === 429)
       
       if (i < retries) {
         const delay = isRateLimit ? 5000 * (i + 1) : 1000 * (i + 1)

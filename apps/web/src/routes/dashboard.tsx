@@ -80,7 +80,7 @@ function Dashboard() {
         })
         if (invokeError) throw invokeError
         setUploadStatus('Ready!')
-      } catch (parseError: any) {
+      } catch (parseError: unknown) {
         console.error('[ResumeTailor] Parse error:', parseError)
         setUploadStatus('Processing failed. Please ensure your file is a valid .docx')
         throw new Error('Processing failed. Please ensure your file is a valid .docx')
@@ -95,16 +95,16 @@ function Dashboard() {
         setUploadStatus(null)
       }, 2000)
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Upload failed:', error)
       setIsUploading(false)
       setUploadStatus(null)
-      alert(`Upload failed: ${error.message || 'Unknown error'}`)
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (resume: any) => {
+    mutationFn: async (resume: Record<string, unknown> & { file_url: string }) => {
       // Extract storage path from public URL
       // URL format: .../storage/v1/object/public/resumes/USER_ID/FILENAME
       const parts = resume.file_url.split('/resumes/')

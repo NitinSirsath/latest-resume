@@ -9,21 +9,20 @@ async function test() {
   try {
     const res1 = await mammoth.extractRawText({ arrayBuffer: ab });
     console.log("arrayBuffer worked:", res1.value.substring(0, 20));
-  } catch(e: any) {
-    console.log("arrayBuffer failed:", e.message);
+  } catch(e: unknown) {
+    console.error("  ❌ Standard import failed:", e);
   }
 
   try {
     const res2 = await mammoth.extractRawText({ buffer: Buffer.from(ab) });
     console.log("Buffer.from worked:", res2.value.substring(0, 20));
-  } catch(e: any) {
-    console.log("Buffer.from failed:", e.message);
+  } catch(e: unknown) {
+    console.error("  ❌ Destructured import failed:", e);
   }
 
   try {
     const res3 = await mammoth.extractRawText({ buffer: new Uint8Array(ab) });
     console.log("Uint8Array worked:", res3.value.substring(0, 20));
-  } catch(e: any) {
     console.log("Uint8Array failed:", e.message);
   }
 }

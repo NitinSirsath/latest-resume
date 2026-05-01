@@ -7,7 +7,7 @@ export interface Resume {
   id: string
   userId: string
   content: string
-  parsed_json?: any
+  parsed_json?: Record<string, unknown>
   created_at: string
 }
 
@@ -38,7 +38,7 @@ export interface TailoredResume {
   jd_raw: string
   jd_analysis: JDAnalysis
   ats_score: number
-  diff_json: any
+  diff_json: Record<string, unknown>
   created_at: string
 }
 

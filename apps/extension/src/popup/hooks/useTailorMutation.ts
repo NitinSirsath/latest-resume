@@ -49,7 +49,8 @@ export function useTailorMutation() {
       if (data && data.error) throw new Error(data.error)
       return data
     },
-    onSuccess: async (data: any) => {
+    onSuccess: async (data: { tailored_resume: Record<string, unknown>; matching_explanation?: string }) => {
+      console.log('[ResumeTailor] Tailor success:', data)
       // Store tailorResult in Chrome Storage so the Dashboard transitions to COMPLETE
       await chromeStorage.updateContext({ 
         status: 'COMPLETE',
