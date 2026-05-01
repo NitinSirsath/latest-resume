@@ -47,19 +47,19 @@ function TailoredDetail() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link to="/dashboard">
-            <Button variant="outline" size="icon" className="rounded-full">
+            <Button variant="outline" size="icon" className="rounded-full dark:border-slate-800 dark:hover:bg-slate-800">
               <ChevronLeft className="w-5 h-5" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{detail.job_title}</h1>
-            <p className="text-slate-500">{detail.company}</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{detail.job_title}</h1>
+            <p className="text-slate-500 dark:text-slate-400">{detail.company}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right mr-2">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">ATS Score</div>
-            <div className="text-2xl font-black text-emerald-600">{detail.ats_score}%</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">ATS Score</div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-500">{detail.ats_score}%</div>
           </div>
           <Button 
             onClick={() => exportMutation.mutate({ 
@@ -75,29 +75,29 @@ function TailoredDetail() {
         </div>
       </div>
 
-      <Separator />
+      <Separator className="dark:bg-slate-800" />
 
       {/* Side by Side Diff */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Original Intent / Summary */}
-        <Card className="border-slate-100 bg-slate-50/50">
-          <CardHeader className="p-4 border-b border-slate-100 bg-white">
-            <CardTitle className="text-xs uppercase text-slate-500">Original Profile</CardTitle>
+        <Card className="border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+          <CardHeader className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+            <CardTitle className="text-xs uppercase text-slate-500 dark:text-slate-400">Original Profile</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 text-sm text-slate-600 leading-relaxed italic">
+          <CardContent className="p-6 text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">
             {detail.resumes.parsed_json?.summary || "No summary provided in base resume."}
           </CardContent>
         </Card>
 
         {/* Tailored Output / Summary */}
-        <Card className="border-indigo-100 bg-indigo-50/20">
-          <CardHeader className="p-4 border-b border-indigo-100 bg-white">
+        <Card className="border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/20 dark:bg-indigo-950/20">
+          <CardHeader className="p-4 border-b border-indigo-100 dark:border-indigo-900/30 bg-white dark:bg-slate-950">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs uppercase text-indigo-600">Tailored Summary</CardTitle>
+              <CardTitle className="text-xs uppercase text-indigo-600 dark:text-indigo-400">Tailored Summary</CardTitle>
               <Badge variant="success" className="text-[9px]">Optimized</Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-6 text-sm text-slate-800 font-medium leading-relaxed">
+          <CardContent className="p-6 text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
             {/* Note: This would come from a tailored_json column in a real implementation */}
             {detail.jd_analysis?.role_title ? `Strategic professional with high alignment to the ${detail.jd_analysis.role_title} role...` : "Loading tailored content..."}
           </CardContent>
@@ -106,33 +106,33 @@ function TailoredDetail() {
 
       {/* Change Log */}
       <section className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <FileCheck className="w-5 h-5 text-indigo-600" />
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+          <FileCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           Strategic Change Log
         </h3>
         <div className="space-y-3">
           {detail.diff_json?.map((change: any, idx: number) => (
-            <div key={idx} className="bg-white border border-slate-200 rounded-lg p-5 flex gap-4 shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-slate-500">{idx + 1}</span>
+            <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 flex gap-4 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{idx + 1}</span>
               </div>
               <div className="space-y-3 flex-1">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold uppercase text-indigo-600 tracking-wider font-mono">
+                  <div className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider font-mono">
                     {change.section}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
                     <Info className="w-3 h-3" />
                     {change.reason}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr,auto,1fr] items-center gap-4 text-xs">
-                  <div className="p-3 bg-red-50 text-red-700 rounded border border-red-100 line-through opacity-60">
+                  <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 rounded border border-red-100 dark:border-red-900/30 line-through opacity-60">
                     {change.original}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-300 hidden md:block" />
-                  <div className="p-3 bg-emerald-50 text-emerald-800 rounded border border-emerald-100 font-medium">
+                  <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-700 hidden md:block" />
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-900/30 font-medium">
                     {change.changed_to}
                   </div>
                 </div>

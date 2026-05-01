@@ -6,6 +6,7 @@ import { SignIn } from './components/SignIn'
 import { Dashboard } from './components/Dashboard'
 import { chromeStorage, StorageContext } from '../lib/chrome-storage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '@resumetailor/ui'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
 const queryClient = new QueryClient()
@@ -48,23 +49,25 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="w-80 min-h-[400px] bg-slate-50 border-x border-slate-200">
-        {!session ? (
-          <SignIn 
-            onSuccess={(s) => setSession(s)} 
-            onError={(e) => console.error(e)} 
-          />
-        ) : (
-          <Dashboard 
-            session={session} 
-            context={context}
-            onSignOut={() => {
-              setSession(null)
-              setContext(null)
-            }} 
-          />
-        )}
-      </div>
+      <ThemeProvider defaultTheme="system" storageKey="resumetailor-extension-theme">
+        <div className="w-80 min-h-[400px] bg-slate-50 dark:bg-slate-950 border-x border-slate-200 dark:border-slate-800 transition-colors duration-300">
+          {!session ? (
+            <SignIn 
+              onSuccess={(s) => setSession(s)} 
+              onError={(e) => console.error(e)} 
+            />
+          ) : (
+            <Dashboard 
+              session={session} 
+              context={context}
+              onSignOut={() => {
+                setSession(null)
+                setContext(null)
+              }} 
+            />
+          )}
+        </div>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

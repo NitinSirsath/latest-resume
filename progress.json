@@ -26,6 +26,11 @@
       "id": "TASK-005",
       "status": "complete",
       "description": "Fix resume stuck in processing state by creating parse-resume edge function and updating dashboard upload handler"
+    },
+    {
+      "id": "TASK-006",
+      "status": "complete",
+      "description": "Implement manual workflow trigger, handle 429 errors, and add global dark mode support"
     }
   ]
 }

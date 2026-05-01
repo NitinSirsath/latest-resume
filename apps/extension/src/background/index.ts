@@ -33,28 +33,47 @@ onMessage('PORTAL_DETECTED', ({ data: { portal } }) => {
 onMessage('JD_SCRAPED', async ({ data: payload }) => {
   console.log('[ResumeTailor] Background received JD:', payload)
   
-  // 1. Check Auth
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    console.log('[ResumeTailor] No session, skipping analysis')
-    await chromeStorage.setContext({ activeJD: payload, status: 'IDLE' })
+  // Just store the JD and set status to IDLE
+  await chromeStorage.setContext({ 
+    activeJD: payload, 
+    status: 'IDLE' 
+  })
+})
+
+onMessage('START_ANALYSIS', async () => {
+  console.log('[ResumeTailor] Manual analysis triggered')
+  
+  // 1. Get current context
+  const context = await chromeStorage.getContext()
+  if (!context?.activeJD) {
+    console.error('[ResumeTailor] No active JD found in storage')
     return
   }
 
-  // 2. Validate JD (Task 3)
-  const validation = jobDescriptionSchema.safeParse(payload)
+  // 2. Check Auth
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    console.log('[ResumeTailor] No session, cannot run pipeline')
+    await chromeStorage.updateContext({ 
+      status: 'PIPELINE_ERROR', 
+      error: 'Please sign in to analyze this job.' 
+    })
+    return
+  }
+
+  // 3. Validate JD
+  const validation = jobDescriptionSchema.safeParse(context.activeJD)
   if (!validation.success) {
     console.error('[ResumeTailor] JD Validation failed:', validation.error.format())
-    await chromeStorage.setContext({ 
-      activeJD: payload, 
+    await chromeStorage.updateContext({ 
       status: 'VALIDATION_ERROR', 
       error: validation.error.errors[0].message 
     })
     return
   }
 
-  // 3. Trigger Pipeline (Task 4)
-  runPipeline(payload, session.user.id)
+  // 4. Trigger Pipeline
+  runPipeline(context.activeJD, session.user.id)
 })
 
 async function runPipeline(payload: JDPayload, userId: string) {

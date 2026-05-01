@@ -1,12 +1,9 @@
 import { 
   Button, 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardContent,
   Badge,
   Progress,
-  Separator
+  Separator,
+  ThemeToggle
 } from '@resumetailor/ui'
 import { Session } from '@supabase/supabase-js'
 import { defineExtensionMessaging } from '@webext-core/messaging'
@@ -57,47 +54,78 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
 
   // Determine State
   const status = context?.status || 'IDLE'
+  const isIdle = status === 'IDLE' && !!context?.activeJD
   const isAnalyzing = status === 'LOADING'
   const isReady = status === 'READY' && !!context?.gapReport
   const isError = status === 'VALIDATION_ERROR' || status === 'PIPELINE_ERROR' || status === 'SAFETY_BLOCKED'
   const isTailoring = tailorMutation.isPending
   const isDone = status === 'COMPLETE' || !!context?.tailorResult
 
+  const formatError = (error: string | null) => {
+    if (!error) return null
+    if (error.includes('429') || error.toLowerCase().includes('quota')) {
+      return 'Rate Limit Exceeded: You have hit the AI limit. Please wait a minute and try again.'
+    }
+    return error
+  }
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 space-y-4 transition-colors duration-300">
       {/* Header Info */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-sm font-bold text-slate-900">ResumeTailor</h1>
-          <p className="text-[10px] text-slate-500 truncate w-32">{session.user.email}</p>
+        <div className="flex items-center gap-2 group">
+          <div className="w-7 h-7 bg-primary rounded flex items-center justify-center text-white shrink-0 shadow-sm">
+             <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-xs font-bold tracking-tight">ResumeTailor</h1>
+            <p className="text-[8px] text-muted truncate w-24 font-medium uppercase tracking-tighter">{session.user.email}</p>
+          </div>
         </div>
-        <Badge variant={session ? "success" : "secondary"} className="text-[10px]">
-          {session ? "Online" : "Offline"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20">
+            <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[7px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Live</span>
+          </div>
+        </div>
       </div>
 
-      <Separator />
+      <Separator className="opacity-50" />
 
       {/* Main Action Card */}
-      <Card className="border-none shadow-sm bg-white">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-xs font-medium text-slate-600 uppercase tracking-wider">
-            Detected Opportunity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-4">
+      <div className="glass-card rounded overflow-hidden shadow-sm">
+        <div className="px-3 py-1.5 border-b border-border bg-slate-50/50 dark:bg-white/[0.02]">
+          <h3 className="text-[9px] font-bold text-muted uppercase tracking-widest">
+            Opportunity
+          </h3>
+        </div>
+        <div className="p-3 space-y-3">
           {context?.activeJD ? (
             <div className="space-y-3">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">{context.activeJD.jobTitle}</h2>
-                <p className="text-xs text-slate-500">{context.activeJD.company}</p>
+                <h2 className="text-xs font-bold leading-tight">{context.activeJD.jobTitle}</h2>
+                <p className="text-[10px] text-muted mt-0.5 font-bold uppercase tracking-tighter">{context.activeJD.company}</p>
               </div>
 
+              {isIdle && (
+                <div className="pt-1">
+                   <Button 
+                    onClick={() => sendMessage('START_ANALYSIS', undefined)} 
+                    size="sm"
+                    className="w-full shadow-sm text-[10px] h-7"
+                  >
+                    <Search className="w-3 h-3 mr-1.5" />
+                    Analyze & Compare
+                  </Button>
+                </div>
+              )}
+
               {isAnalyzing && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium">
+                <div className="space-y-3 py-1">
+                  <div className="flex items-center gap-2 text-[10px] text-primary font-bold">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    {context?.reasoning || 'AI is thinking...'}
+                    <span className="animate-pulse">{context?.reasoning || 'Thinking...'}</span>
                   </div>
                   <Progress 
                     value={
@@ -106,72 +134,67 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                       context?.reasoning?.includes('Identifying') ? 75 :
                       context?.reasoning?.includes('Rewriting') ? 90 : 10
                     } 
-                    className="h-1 bg-indigo-50" 
+                    className="h-1 bg-slate-100 dark:bg-white/5" 
                   />
                 </div>
               )}
 
               {isError && (
-                <div className="bg-red-50 border border-red-100 p-3 rounded-md space-y-2">
-                  <div className="flex items-center gap-2 text-red-700 text-xs font-semibold">
-                    <AlertCircle className="w-4 h-4" />
-                    {status === 'VALIDATION_ERROR' ? 'Data Quality Error' : 
-                     status === 'SAFETY_BLOCKED' ? 'Safety Block' : 'System Error'}
+                <div className="bg-red-500/5 border border-red-500/20 p-2.5 rounded space-y-1.5 max-h-32 overflow-y-auto">
+                  <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-[10px] font-bold">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    Error
                   </div>
-                  <p className="text-[10px] text-red-600 leading-relaxed">
-                    {context?.error || 'An unexpected error occurred. Please try again.'}
+                  <p className="text-[9px] text-red-500 leading-relaxed font-bold uppercase tracking-tighter">
+                    {formatError(context?.error || 'An unexpected error occurred.')}
                   </p>
-                  {status === 'PIPELINE_ERROR' && context?.failedAt && (
-                    <p className="text-[8px] text-red-400 uppercase font-bold">
-                      Failed at: {context.failedAt}
-                    </p>
-                  )}
                 </div>
               )}
 
               {isReady && !isTailoring && !isDone && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-100">
-                    <span className="text-[10px] font-medium text-slate-500 uppercase">Match Score</span>
-                    <Badge variant={context.gapReport ? "success" : "outline"} className="text-xs">
+                  <div className="flex items-center justify-between bg-slate-50/50 dark:bg-white/5 p-2 rounded border border-border">
+                    <span className="text-[9px] font-bold text-muted uppercase tracking-widest">Match Score</span>
+                    <Badge variant="success" className="scale-90 origin-right">
                       {context.gapReport?.ats_score_estimate ?? '??'}%
                     </Badge>
                   </div>
                   <Button 
                     onClick={() => tailorMutation.mutate()} 
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 h-8 text-xs"
+                    size="sm"
+                    className="w-full h-7 text-[10px]"
                   >
-                    <Sparkles className="w-3 h-3 mr-2" />
-                    Optimize Resume Now
+                    <Sparkles className="w-3 h-3 mr-1.5" />
+                    Optimize Resume
                   </Button>
                   
                   {tailorMutation.isError && (
-                    <div className="mt-2 p-2 bg-red-50 text-red-600 text-[10px] rounded flex gap-2 items-start">
+                    <div className="p-2 bg-red-500/5 border border-red-500/10 text-red-500 text-[9px] rounded flex gap-2 items-start font-bold uppercase">
                       <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                      <p>{tailorMutation.error?.message || 'Failed to tailor resume'}</p>
+                      <p className="leading-relaxed">{formatError(tailorMutation.error?.message || 'Failed')}</p>
                     </div>
                   )}
                 </div>
               )}
 
               {isTailoring && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium">
+                <div className="space-y-3 py-1">
+                  <div className="flex items-center gap-2 text-[10px] text-primary font-bold animate-pulse">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Fine-tuning your resume experience...
+                    Optimizing experience...
                   </div>
-                  <Progress value={95} className="h-1 bg-indigo-50" />
+                  <Progress value={95} className="h-1 bg-slate-100 dark:bg-white/5" />
                 </div>
               )}
 
               {isDone && (
-                <div className="space-y-3 bg-emerald-50 p-3 rounded-md border border-emerald-100">
-                  <div className="flex items-center gap-2 text-emerald-700 text-xs font-medium">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Resume Tailored Successfully!
+                <div className="space-y-3 bg-emerald-500/5 p-3 rounded border border-emerald-500/20">
+                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Ready to Download
                   </div>
-                  <p className="text-[10px] text-emerald-600">
-                    High match confirmed. Optimized for {context.analysis?.role_title}.
+                  <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-tighter leading-tight">
+                    Optimized for {context.analysis?.role_title}.
                   </p>
                   <Button 
                     onClick={() => {
@@ -184,58 +207,54 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                       })
                     }}
                     disabled={exportMutation.isPending}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    size="sm"
+                    className="w-full h-7 text-[10px] bg-emerald-600 hover:bg-emerald-500"
                   >
-                    {exportMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                    Download Optimized PDF
+                    {exportMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3 mr-1.5" />}
+                    Download PDF
                   </Button>
-                  
-                  {exportMutation.isError && (
-                    <div className="mt-2 p-2 bg-red-50 text-red-600 text-[10px] rounded flex gap-2 items-start">
-                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                      <p>{exportMutation.error?.message || 'Failed to download PDF'}</p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           ) : (
             <div className="py-6 text-center space-y-4">
-              <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
-              <p className="text-xs text-slate-500 px-4">
-                No job description detected automatically. 
+              <div className="w-10 h-10 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto border border-border">
+                <Search className="w-5 h-5 text-slate-300 dark:text-slate-700" />
+              </div>
+              <p className="text-[10px] text-muted px-4 font-bold uppercase tracking-widest leading-relaxed">
+                No job detected.
               </p>
               
               <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full text-xs mt-2" 
+                variant="secondary" 
+                size="sm"
+                className="w-full h-7 text-[10px]" 
                 onClick={handleManualDetect}
                 disabled={manualDetecting}
               >
                 {manualDetecting ? (
-                  <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Scanning Page...</>
+                  <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Scanning...</>
                 ) : (
-                  <><Search className="w-3 h-3 mr-2" /> Detect Job on Page</>
+                  <><Search className="w-3 h-3 mr-1.5" /> Scan Page</>
                 )}
               </Button>
               
               {detectError && (
-                <p className="text-[10px] text-red-500 mt-2 bg-red-50 p-1 rounded border border-red-100">
+                <p className="text-[9px] text-red-500 mt-1 font-bold uppercase tracking-tighter">
                   {detectError}
                 </p>
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="pt-2">
+      <div className="pt-1">
         <button 
           onClick={handleSignOut}
-          className="text-[10px] text-slate-400 hover:text-slate-600 w-full text-center transition-colors"
+          className="text-[8px] text-muted hover:text-primary w-full text-center transition-all font-bold uppercase tracking-widest"
         >
-          Sign Out of ResumeTailor
+          Sign Out
         </button>
       </div>
     </div>

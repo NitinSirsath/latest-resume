@@ -38,14 +38,14 @@ export function SignIn({ onSuccess, onError }: SignInProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 space-y-4">
-      <h2 className="text-lg font-semibold text-center">Unlock Your Career Potential</h2>
-      <p className="text-sm text-gray-500 text-center">Sign in to start tailoring your resumes.</p>
-      <Button onClick={handleLogin} disabled={loading} className="w-full">
+    <div className="flex flex-col items-center justify-center p-6 space-y-4 h-[400px]">
+      <h2 className="text-lg font-semibold text-center text-slate-900 dark:text-slate-50">Unlock Your Career Potential</h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400 text-center">Sign in to start tailoring your resumes.</p>
+      <Button onClick={handleLogin} disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700">
         {loading ? 'Opening Google Sign-in...' : 'Sign in with Google'}
       </Button>
       {error && (
-        <p className="text-xs text-red-500 text-center bg-red-50 p-2 rounded w-full break-words">
+        <p className="text-xs text-red-500 text-center bg-red-50 dark:bg-red-950/20 p-2 rounded w-full border border-red-100 dark:border-red-900/30 break-words">
           {error}
         </p>
       )}

@@ -30,6 +30,7 @@
     "notifications"
   ],
   "host_permissions": [
+    "http://localhost/*",
     "*://*.linkedin.com/*",
     "*://*.naukri.com/*",
     "*://*.indeed.com/*",

@@ -18,4 +18,5 @@ export interface ExtensionMessaging {
   PORTAL_DETECTED: (payload: { portal: PortalType }) => void
   JD_SCRAPED: (payload: JDPayload) => void
   MANUAL_DETECT: () => { success: boolean; error?: string }
+  START_ANALYSIS: () => void
 }

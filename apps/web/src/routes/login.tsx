@@ -36,14 +36,14 @@ function Login() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] bg-slate-50">
-      <Card className="w-full max-w-md border-none shadow-xl">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <Card className="w-full max-w-md border-none shadow-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardHeader className="text-center pb-2">
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 text-white">
             <Chrome className="w-6 h-6" />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to ResumeTailor</CardTitle>
-          <p className="text-slate-500 text-sm mt-2">
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-50">Welcome to ResumeTailor</CardTitle>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
             Tailor your career path with AI-powered precision.
           </p>
         </CardHeader>
@@ -51,7 +51,7 @@ function Login() {
           <Button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-3 py-6"
+            className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-3 py-6"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
