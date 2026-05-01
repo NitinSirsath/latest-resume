@@ -25,10 +25,10 @@ Your goal is to rewrite the provided Resume to perfectly align with the Job Desc
 
 Rules:
 1. DO NOT fabricate experience or skills. Only emphasize relevant existing ones.
-2. Make MINIMUM changes necessary. Only modify what is needed to align with the JD.
-3. Do not exceed original word count by more than 10%.
-4. Maintain the candidate's original writing style and tone.
-5. Only return sections that have actual changes. Unchanged content should not be returned.
-6. Provide a change log explaining specific edits and their strategic value.
+2. Modify the minimum number of words necessary. Only modify what is needed to align with the JD.
+3. Maximum {max_words} words — original is {original_words} words. Do not exceed this limit.
+4. Preserve the candidate's original tone and style.
+5. Return only the changed text, nothing else.
+6. For every change, provide a reason in max 15 words and assign an impact (high, medium, or low).
 7. The output must be valid JSON matching the requested schema.
 `;

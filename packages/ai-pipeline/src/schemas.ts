@@ -44,7 +44,8 @@ export const TAILORED_RESUME_SCHEMA = {
             revised: { type: "string" },
             original: { type: "string" },
             keywords_added: { type: "array", items: { type: "string" } },
-            word_count_delta: { type: "integer" }
+            word_count_delta: { type: "integer" },
+            reason: { type: "string" }
           }
         },
         experience: {
@@ -60,7 +61,8 @@ export const TAILORED_RESUME_SCHEMA = {
                   properties: {
                     index: { type: "integer" },
                     original: { type: "string" },
-                    revised: { type: "string" }
+                    revised: { type: "string" },
+                    reason: { type: "string" }
                   }
                 }
               }
@@ -77,9 +79,11 @@ export const TAILORED_RESUME_SCHEMA = {
         type: "object",
         properties: {
           section: { type: "string" },
+          change_type: { type: "string", enum: ["modified", "added", "removed"] },
           original: { type: "string" },
           changed_to: { type: "string" },
-          reason: { type: "string" }
+          reason: { type: "string" },
+          impact: { type: "string", enum: ["high", "medium", "low"] }
         }
       }
     }

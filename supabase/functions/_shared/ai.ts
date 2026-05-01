@@ -51,32 +51,54 @@ Your goal is to rewrite the provided Resume to perfectly align with the Job Desc
 
 Rules:
 1. DO NOT fabricate experience or skills. Only emphasize relevant existing ones.
-2. Rewrite the professional summary to highlight the most relevant achievements for this specific role.
-3. Optimize bullet points in the experience section to use keywords from the JD while maintaining clarity.
-4. Ensure the tech stack/skills section lists the most relevant technologies first.
-5. Provide a change log explaining specific edits and their strategic value.
-6. The output must be valid JSON matching the requested schema.
+2. Modify the minimum number of words necessary. Only modify what is needed to align with the JD.
+3. Maximum {max_words} words — original is {original_words} words. Do not exceed this limit.
+4. Preserve the candidate's original tone and style.
+5. Return only the changed text, nothing else.
+6. For every change, provide a reason in max 15 words and assign an impact (high, medium, or low).
+7. The output must be valid JSON matching the requested schema.
 `;
 
 export const TAILORED_RESUME_SCHEMA = {
   type: "object",
   properties: {
-    tailored_resume: {
+    final_ats_score: { type: "integer" },
+    tailored_sections: {
       type: "object",
       properties: {
-        professional_summary: { type: "string" },
-        work_experience: {
+        summary: {
+          type: "object",
+          properties: {
+            revised: { type: "string" },
+            original: { type: "string" },
+            keywords_added: { type: "array", items: { type: "string" } },
+            word_count_delta: { type: "integer" },
+            reason: { type: "string" }
+          }
+        },
+        experience: {
           type: "array",
           items: {
             type: "object",
             properties: {
               company: { type: "string" },
-              role: { type: "string" },
-              bullets: { type: "array", items: { type: "string" } }
+              bullets_changed: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    index: { type: "integer" },
+                    original: { type: "string" },
+                    revised: { type: "string" },
+                    reason: { type: "string" }
+                  }
+                }
+              }
             }
           }
         },
-        skills: { type: "array", items: { type: "string" } }
+        skills_added: { type: "array", items: { type: "string" } },
+        skills_removed: { type: "array", items: { type: "string" } }
       }
     },
     change_log: {
@@ -85,13 +107,14 @@ export const TAILORED_RESUME_SCHEMA = {
         type: "object",
         properties: {
           section: { type: "string" },
+          change_type: { type: "string", enum: ["modified", "added", "removed"] },
           original: { type: "string" },
           changed_to: { type: "string" },
-          reason: { type: "string" }
+          reason: { type: "string" },
+          impact: { type: "string", enum: ["high", "medium", "low"] }
         }
       }
-    },
-    final_ats_score: { type: "integer" }
+    }
   },
-  required: ["tailored_resume", "change_log", "final_ats_score"]
+  required: ["final_ats_score", "tailored_sections", "change_log"]
 };
