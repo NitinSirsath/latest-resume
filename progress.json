@@ -3,21 +3,23 @@
   "currentPhase": 1,
   "overallStatus": "IN_PROGRESS",
   "phases": {
-    "1": { "name": "Output Quality Foundation", "status": "IN_PROGRESS", "completedTasks": 0, "totalTasks": 4 },
-    "2": { "name": "Diff Review System", "status": "PENDING", "completedTasks": 0, "totalTasks": 6 },
+    "1": { "name": "Output Quality Foundation", "status": "COMPLETED", "completedTasks": 4, "totalTasks": 4 },
+    "2": { "name": "Diff Review System", "status": "IN_PROGRESS", "completedTasks": 0, "totalTasks": 6 },
     "3": { "name": "Polish & Reliability", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 },
     "4": { "name": "Production", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 }
   },
   "tasks": [
-    { "id": "TASK-010", "phase": 1, "status": "pending", "file": "packages/ai-pipeline/src/prompts.ts", "description": "Upgrade TAILOR_RESUME_PROMPT with quality constraints", "completedAt": null },
-    { "id": "TASK-011", "phase": 1, "status": "pending", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add post-AI validation layer", "completedAt": null },
-    { "id": "TASK-012", "phase": 1, "status": "pending", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add change_id to every change_log entry", "completedAt": null },
-    { "id": "TASK-013", "phase": 1, "status": "pending", "file": "packages/ai-pipeline/src/schemas.ts", "description": "Add reason and impact fields to change schema", "completedAt": null },
-    { "id": "TASK-020", "phase": 2, "status": "pending", "file": "supabase/functions/review-changes/index.ts", "description": "Create review-changes edge function for AI alternatives", "completedAt": null },
-    { "id": "TASK-021", "phase": 2, "status": "pending", "file": "packages/ui/src/components/DiffCard.tsx", "description": "Create DiffCard component with GitHub-style diff", "completedAt": null },
-    { "id": "TASK-022", "phase": 2, "status": "pending", "file": "packages/ui/src/components/DiffReviewPanel.tsx", "description": "Create DiffReviewPanel with accept/reject controls", "completedAt": null },
-    { "id": "TASK-023", "phase": 2, "status": "pending", "file": "supabase/functions/write-docx/index.ts", "description": "Update write-docx to apply only accepted changes", "completedAt": null },
-    { "id": "TASK-024", "phase": 2, "status": "pending", "file": "apps/web/src/routes/review.tsx", "description": "Add diff review route in web dashboard", "completedAt": null },
-    { "id": "TASK-025", "phase": 2, "status": "pending", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": null }
+    { "id": "TASK-009", "phase": 1, "status": "complete", "file": "supabase/config.toml", "description": "Fix Deno/Node Package Boundary", "completedAt": "2026-05-02T01:05:00Z" },
+    { "id": "TASK-010-new", "phase": 1, "status": "complete", "file": "supabase/functions/parse-resume/index.ts", "description": "Replace Regex Parser with Gemini-Based Extraction", "completedAt": "2026-05-02T01:07:00Z" },
+    { "id": "TASK-010", "phase": 1, "status": "complete", "file": "packages/ai-pipeline/src/prompts.ts", "description": "Upgrade TAILOR_RESUME_PROMPT with quality constraints", "completedAt": "2026-05-02T00:31:00Z" },
+    { "id": "TASK-011", "phase": 1, "status": "complete", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add post-AI validation layer", "completedAt": "2026-05-02T00:50:00Z" },
+    { "id": "TASK-012", "phase": 1, "status": "complete", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add change_id to every change_log entry", "completedAt": "2026-05-02T00:52:00Z" },
+    { "id": "TASK-013", "phase": 1, "status": "complete", "file": "packages/ai-pipeline/src/schemas.ts", "description": "Add reason and impact fields to change schema", "completedAt": "2026-05-02T00:55:00Z" },
+    { "id": "TASK-020", "phase": 2, "status": "complete", "file": "supabase/functions/review-changes/index.ts", "description": "Create review-changes edge function for AI alternatives", "completedAt": "2026-05-02T00:58:00Z" },
+    { "id": "TASK-021", "phase": 2, "status": "complete", "file": "packages/ui/src/components/DiffCard.tsx", "description": "Create DiffCard component with GitHub-style diff", "completedAt": "2026-05-02T01:00:00Z" },
+    { "id": "TASK-022", "phase": 2, "status": "complete", "file": "packages/ui/src/components/DiffReviewPanel.tsx", "description": "Create DiffReviewPanel with accept/reject controls", "completedAt": "2026-05-02T01:10:00Z" },
+    { "id": "TASK-023", "phase": 2, "status": "complete", "file": "supabase/functions/write-docx/index.ts", "description": "Update write-docx to apply only accepted changes", "completedAt": "2026-05-02T01:12:00Z" },
+    { "id": "TASK-024", "phase": 2, "status": "complete", "file": "apps/web/src/routes/review.$id.tsx", "description": "Add diff review route in web dashboard", "completedAt": "2026-05-02T01:14:00Z" },
+    { "id": "TASK-025", "phase": 2, "status": "complete", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": "2026-05-02T01:17:00Z" }
   ]
 }

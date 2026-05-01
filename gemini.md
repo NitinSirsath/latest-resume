@@ -125,19 +125,27 @@ Every edge function must:
 - Use Deno.env.get() for all env vars
 - Never exceed 200 lines — split into helpers if needed
 
-## 7. Task Execution Protocol
-Before starting any task:
-- [ ] Read GEMINI.md
-- [ ] Read progress.json — know current phase and last task
-- [ ] Identify exact files to change — no more, no less
-- [ ] State what you will do before doing it
+## 7. Task Completion Protocol
+For every single task, the AI must follow this strict sequence:
 
-After completing any task:
-- [ ] Run pnpm typecheck — zero errors required
-- [ ] Update progress.json — task status and timestamp
-- [ ] No secrets hardcoded
-- [ ] All error states handled with specific failedAt labels
-- [ ] Do NOT start next task without confirmation
+1. **Write Code**: The AI modifies the target file.
+2. **Automated Validation**: The AI must run `pnpm review` (which includes `pnpm typecheck` and the `scripts/review-task.js` forbidden pattern scan) to guarantee no syntax, type, or rule errors were introduced.
+3. **Self-Review Checklist**: Before showing the diff, the AI must confirm:
+   - Only files listed in the task were touched
+   - No data contract shapes changed unless task requires it
+   - Zero `any` types introduced
+   - All catch blocks have `failedAt: 'specific-step-name'`
+   If any answer is NO, fix before showing diff.
+4. **Generate Diff**: The AI runs `git diff` on the modified files and presents the clean diff directly in the chat.
+5. **Explain the "Why"**: The AI provides a 1-sentence explanation of how the code specifically solves the task.
+6. **Human Checkpoint**: The AI stops and waits. It does not update progress.json and does not move to the next task until the user explicitly replies with "Approved".
+7. **Commit**: Once approved, create a git commit. Every git commit message must follow this format:
+   feat: [description] ([TASK-ID])
+   
+   Modified: [files]
+   Next task: [TASK-ID]
+   Review: pnpm review PASSED
+8. **Progress Update**: Only after the commit, update progress.json and proceed.
 
 ## 8. UI Standards
 - All diff UI must use these exact color tokens:
