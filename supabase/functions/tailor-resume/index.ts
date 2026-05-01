@@ -10,7 +10,7 @@ serve(async (req) => {
   }
 
   try {
-    const { base_resume_json, gap_report, jd_analysis, tailored_resume_id } = await req.json()
+    const { base_resume_json, base_resume_id, gap_report, jd_analysis, tailored_resume_id } = await req.json()
     
     // 1. Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
@@ -57,10 +57,18 @@ STRICT RULES:
     const result = await model.generateContent(prompt)
     const tailorResult = JSON.parse(result.response.text())
 
-    // 4. Update Database — persist full tailored JSON, diff, and ATS score
+    // 4. Update Database — persist full tailored JSON, diff, ATS score, and base_resume_id
     const updatePayload: Record<string, any> = {
-      diff_json: tailorResult.tailored_sections,
+      diff_json: {
+        sections: tailorResult.tailored_sections,
+        log: tailorResult.change_log
+      },
       ats_score: tailorResult.final_ats_score,
+    }
+
+    // Backfill base_resume_id if provided (needed by write-docx to fetch original file)
+    if (base_resume_id) {
+      updatePayload.base_resume_id = base_resume_id
     }
 
     const { error: dbError } = await supabase

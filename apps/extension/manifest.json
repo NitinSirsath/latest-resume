@@ -35,5 +35,8 @@
     "*://*.naukri.com/*",
     "*://*.indeed.com/*",
     "*://*.wellfound.com/*"
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' http://localhost:5180; object-src 'self'"
+  }
 }

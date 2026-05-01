@@ -16,17 +16,44 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 1. Fetch tailored resume to get diff_json
+    // 1. Fetch tailored resume and join to base resume for the original file URL
     const { data: tailoredData, error: tailoredError } = await supabase
       .from('tailored_resumes')
-      .select('*, resumes(file_url)')
+      .select('*, resumes!base_resume_id(file_url)')
       .eq('id', tailored_resume_id)
       .single()
 
     if (tailoredError) throw tailoredError
     if (!tailoredData) throw new Error("Tailored resume not found")
 
-    const fileUrl = tailoredData.resumes?.file_url
+    console.log('[write-docx] base_resume_id:', tailoredData.base_resume_id)
+    console.log('[write-docx] resumes join:', JSON.stringify(tailoredData.resumes))
+
+    // Get file_url: prefer FK join result, fallback to direct lookup, fallback to latest user resume
+    let fileUrl = (tailoredData.resumes as any)?.file_url
+
+    if (!fileUrl && tailoredData.base_resume_id) {
+      // Direct lookup using FK
+      const { data: resumeData } = await supabase
+        .from('resumes')
+        .select('file_url')
+        .eq('id', tailoredData.base_resume_id)
+        .single()
+      fileUrl = resumeData?.file_url
+    }
+
+    if (!fileUrl) {
+      // Last resort: use the user's most recently uploaded resume
+      console.log('[write-docx] base_resume_id is null, falling back to latest resume for user:', user_id)
+      const { data: latestResume } = await supabase
+        .from('resumes')
+        .select('file_url')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      fileUrl = latestResume?.file_url
+    }
     if (!fileUrl) throw new Error("Original resume file URL not found")
 
     // 2. Download original DOCX
@@ -39,7 +66,7 @@ serve(async (req) => {
     const { value: rawText } = await mammoth.extractRawText({ arrayBuffer, buffer })
     let modifiedText = rawText
 
-    const tailored_sections = tailoredData.diff_json || {}
+    const tailored_sections = tailoredData.diff_json?.sections || {}
 
     if (tailored_sections.summary?.revised && tailored_sections.summary?.original) {
       modifiedText = modifiedText.replace(tailored_sections.summary.original, tailored_sections.summary.revised)

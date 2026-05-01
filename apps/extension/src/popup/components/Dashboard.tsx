@@ -198,12 +198,8 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                   </p>
                   <Button 
                     onClick={() => {
-                      const result = context?.tailorResult || tailorMutation.data;
-                      const finalJson = result?.tailored_resume || result;
-                      
                       exportMutation.mutate({ 
-                        tailored_id: context!.tailoredResumeId!, 
-                        tailored_json: finalJson 
+                        tailored_id: context!.tailoredResumeId!
                       })
                     }}
                     disabled={exportMutation.isPending}
@@ -211,7 +207,7 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                     className="w-full h-7 text-[10px] bg-emerald-600 hover:bg-emerald-500"
                   >
                     {exportMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3 mr-1.5" />}
-                    Download PDF
+                    Download DOCX
                   </Button>
                 </div>
               )}

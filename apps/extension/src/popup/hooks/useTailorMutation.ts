@@ -38,6 +38,7 @@ export function useTailorMutation() {
       const { data, error } = await supabase.functions.invoke('tailor-resume', {
         body: {
           base_resume_json: resumes[0].parsed_json,
+          base_resume_id: resumes[0].id,
           gap_report: context.gapReport,
           jd_analysis: context.analysis,
           tailored_resume_id: context.tailoredResumeId

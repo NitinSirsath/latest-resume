@@ -12,7 +12,7 @@
 
 ## Rules
 - Always run `pnpm typecheck` after any code change
-- Commit after each completed task: conventional commits (feat:, fix:, chore:)
+<!-- - Commit after each completed task: conventional commits (feat:, fix:, chore:) -->
 - If a test fails 3 times, stop and document the blocker in progress.json
 - Never hardcode secrets — use Deno.env.get() in edge functions, import.meta.env in React
 - Never modify .env files without showing diff first

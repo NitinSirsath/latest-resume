@@ -22,7 +22,11 @@ export default defineConfig({
     port: 5180,
     strictPort: true,
     host: "localhost",
-    cors: true,
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+    },
     hmr: {
       host: "localhost",
       protocol: "ws",
