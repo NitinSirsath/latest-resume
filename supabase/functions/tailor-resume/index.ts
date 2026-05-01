@@ -4,6 +4,53 @@ import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "../_shared/ai.ts"
 
+interface TailorResult {
+  final_ats_score?: number;
+  tailored_sections?: Record<string, unknown> & {
+    summary?: { revised?: string };
+    experience?: Array<{ company?: string }>;
+  };
+  change_log?: Array<Record<string, unknown>>;
+}
+
+function validateTailorResult(tailorResult: TailorResult, baseResumeJson: Record<string, unknown>): string | null {
+  const tailoredSections = tailorResult.tailored_sections;
+  if (!tailoredSections) return null; // No changes is valid
+
+  const sections = baseResumeJson.sections as Record<string, unknown> | undefined;
+
+  // 1. summary word count within bounds
+  if (tailoredSections.summary?.revised) {
+    const origSummary = sections?.summary as { word_count?: number } | undefined;
+    const maxWords = (origSummary?.word_count || 0) * 1.1 + 10;
+    const revisedWords = tailoredSections.summary.revised.split(/\s+/).length;
+    if (revisedWords > maxWords) {
+      return `Summary word count exceeded: ${revisedWords} > ${maxWords}`;
+    }
+  }
+
+  // 2. all experience companies match original companies
+  if (tailoredSections.experience) {
+    const origExp = (sections?.experience as Array<{ company?: string }> | undefined) || [];
+    const origCompanies = new Set(origExp.map(e => e.company).filter(Boolean));
+    for (const exp of tailoredSections.experience) {
+      if (exp.company && !origCompanies.has(exp.company)) {
+        return `Invented company: ${exp.company}`;
+      }
+    }
+  }
+
+  // 3. no new sections invented
+  const allowedKeys = ['summary', 'experience', 'skills_added', 'skills_removed'];
+  for (const key of Object.keys(tailoredSections)) {
+    if (!allowedKeys.includes(key)) {
+      return `Invented section: ${key}`;
+    }
+  }
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -17,28 +64,31 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 2. Initialize Gemini (Using Flash for speed as requested)
+    // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-flash-latest",
+      model: "gemini-1.5-pro-latest", // Use Pro for complex constraints
       generationConfig: { 
         responseMimeType: "application/json",
-        responseSchema: TAILORED_RESUME_SCHEMA as any
+        responseSchema: TAILORED_RESUME_SCHEMA as never
       }
     })
 
     // 3. Call Gemini with the shared prompt template
-    const prompt = `
-${TAILOR_RESUME_PROMPT}
+    const origWordCount = (base_resume_json.sections as Record<string, unknown>)?.summary as { word_count?: number } | undefined;
+    const maxWords = Math.floor((origWordCount?.word_count || 0) * 1.1) + 10;
 
-ORIGINAL SUMMARY (${base_resume_json.sections?.summary?.word_count || 0} words):
-${base_resume_json.sections?.summary?.text || ''}
+    const basePrompt = `
+${TAILOR_RESUME_PROMPT.replace('{max_words}', maxWords.toString()).replace('{original_words}', (origWordCount?.word_count || 0).toString())}
+
+ORIGINAL SUMMARY:
+${((base_resume_json.sections as Record<string, unknown>)?.summary as { text?: string })?.text || ''}
 
 ORIGINAL EXPERIENCE:
-${JSON.stringify(base_resume_json.sections?.experience || [], null, 2)}
+${JSON.stringify((base_resume_json.sections as Record<string, unknown>)?.experience || [], null, 2)}
 
 ORIGINAL SKILLS (flat list):
-${(base_resume_json.sections?.skills?.flat_list || []).join(', ')}
+${((base_resume_json.sections as Record<string, unknown>)?.skills as { flat_list?: string[] })?.flat_list?.join(', ') || ''}
 
 JOB ANALYSIS:
 ${JSON.stringify(jd_analysis, null, 2)}
@@ -47,18 +97,39 @@ GAP REPORT:
 ${JSON.stringify(gap_report, null, 2)}
 
 STRICT RULES:
-- Summary: maximum ${(base_resume_json.sections?.summary?.word_count || 0) + 5} words
+- Summary: maximum ${maxWords} words
 - Only modify bullets that are directly relevant to the JD
 - Only add skills that appear in the JD analysis
 - Return ONLY changed sections — do not return unchanged content
 - Preserve the candidate's original voice and phrasing style
 `
 
-    const result = await model.generateContent(prompt)
-    const tailorResult = JSON.parse(result.response.text())
+    const generateAndValidate = async (promptText: string, retriesLeft: number): Promise<TailorResult> => {
+      const result = await model.generateContent(promptText)
+      const tailorResult = JSON.parse(result.response.text()) as TailorResult
 
-    // 4. Update Database — persist full tailored JSON, diff, ATS score, and base_resume_id
-    const updatePayload: Record<string, any> = {
+      const errorMsg = validateTailorResult(tailorResult, base_resume_json)
+      if (errorMsg) {
+        console.warn(`[tailor-resume] Validation failed: ${errorMsg}. Retries left: ${retriesLeft}`)
+        if (retriesLeft > 0) {
+          const stricterPrompt = promptText + `\n\nSTRICT WARNING: Your previous attempt failed validation: ${errorMsg}. Fix this immediately.`
+          return generateAndValidate(stricterPrompt, retriesLeft - 1)
+        } else {
+          console.warn(`[tailor-resume] Validation failed completely. Returning original.`)
+          return {
+            final_ats_score: (gap_report as { ats_score_estimate?: number })?.ats_score_estimate || 0,
+            tailored_sections: {},
+            change_log: []
+          }
+        }
+      }
+      return tailorResult
+    }
+
+    const tailorResult = await generateAndValidate(basePrompt, 1)
+
+    // 4. Update Database
+    const updatePayload: Record<string, unknown> = {
       diff_json: {
         sections: tailorResult.tailored_sections,
         log: tailorResult.change_log
@@ -66,7 +137,6 @@ STRICT RULES:
       ats_score: tailorResult.final_ats_score,
     }
 
-    // Backfill base_resume_id if provided (needed by write-docx to fetch original file)
     if (base_resume_id) {
       updatePayload.base_resume_id = base_resume_id
     }
@@ -82,10 +152,11 @@ STRICT RULES:
       JSON.stringify(tailorResult),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (error: any) {
-    console.error('[tailor-resume] Top-level error:', error.message)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[tailor-resume] Top-level error:', errorMessage)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage, failedAt: 'tailor_pipeline_execution' }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }

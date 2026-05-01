@@ -4,7 +4,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "review": "pnpm typecheck && node scripts/review-task.js"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
