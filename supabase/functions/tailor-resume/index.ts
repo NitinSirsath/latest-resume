@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
-import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "../_shared/ai.ts"
+import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "@resumetailor/ai-pipeline"
 
 interface TailorResult {
   final_ats_score?: number;

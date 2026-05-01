@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
-import { ANALYZE_GAP_PROMPT, GAP_REPORT_SCHEMA } from "../_shared/ai.ts"
+import { ANALYZE_GAP_PROMPT, GAP_REPORT_SCHEMA } from "@resumetailor/ai-pipeline"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

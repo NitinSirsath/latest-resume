@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
-import { ANALYZE_JD_PROMPT, JD_ANALYSIS_SCHEMA } from "../_shared/ai.ts"
+import { ANALYZE_JD_PROMPT, JD_ANALYSIS_SCHEMA } from "@resumetailor/ai-pipeline"
 
 serve(async (req) => {
   // Handle CORS preflight

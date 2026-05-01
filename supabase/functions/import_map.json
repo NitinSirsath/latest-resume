@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@resumetailor/ai-pipeline": "../../packages/ai-pipeline/src/index.ts",
+    "@resumetailor/types": "../../packages/types/src/index.ts"
+  }
+}
