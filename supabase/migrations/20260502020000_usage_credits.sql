@@ -1,4 +1,4 @@
-CREATE TABLE usage_credits (
+CREATE TABLE IF NOT EXISTS usage_credits (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     credits INT NOT NULL DEFAULT 10,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
