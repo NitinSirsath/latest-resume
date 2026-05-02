@@ -7,7 +7,7 @@ import { Session } from '@supabase/supabase-js'
 import * as Sentry from "@sentry/browser"
 
 Sentry.init({
-  dsn: "https://3b4e9793c03b6cd0a01e3769400885de@o4511316837269504.ingest.us.sentry.io/4511319558455296",
+  dsn: import.meta.env.VITE_SENTRY_DSN,
   tracesSampleRate: 1.0,
 })
 
@@ -79,6 +79,10 @@ onMessage('START_ANALYSIS', async () => {
   }
 
   // 4. Trigger Pipeline
+  Sentry.setUser({ id: session.user.id, email: session.user.email })
+  try {
+    Sentry.setTag('portal', new URL(context.activeJD.sourceUrl).hostname)
+  } catch { /* ignore invalid URLs */ }
   runPipeline(context.activeJD, session.user.id)
 })
 
@@ -162,6 +166,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
   } catch (error: unknown) {
     console.error('[ResumeTailor] Pipeline error:', error)
     const err = error as Error & { step?: string }
+    Sentry.captureException(err, { extra: { failedAt: err.step || 'unknown', userId } })
     await chromeStorage.updateContext({ 
       status: 'PIPELINE_ERROR', 
       error: err.message || 'Unknown error',

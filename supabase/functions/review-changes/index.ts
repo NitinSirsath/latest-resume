@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), tracesSampleRate: 1.0 })
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -79,6 +82,7 @@ Provide ONE alternative improvement that:
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[review-changes] Error:', errorMessage)
+    Sentry.captureException(error)
     return new Response(
       JSON.stringify({ error: errorMessage, code: "INTERNAL_ERROR", failedAt: "review_changes_execution" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

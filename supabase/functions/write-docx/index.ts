@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import mammoth from "npm:mammoth@1.8.0"
 import { Document, Packer, Paragraph, TextRun } from "npm:docx@9.0.2"
 import { corsHeaders } from "../_shared/cors.ts"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), tracesSampleRate: 1.0 })
 
 // Define strict types instead of any
 interface ReviewDecision {

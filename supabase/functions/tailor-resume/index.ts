@@ -6,7 +6,7 @@ import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "@resumetailor/ai-p
 import * as Sentry from "npm:@sentry/deno"
 
 Sentry.init({
-  dsn: "https://3b4e9793c03b6cd0a01e3769400885de@o4511316837269504.ingest.us.sentry.io/4511319558455296",
+  dsn: Deno.env.get('SENTRY_DSN'),
   tracesSampleRate: 1.0,
 })
 

@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { ANALYZE_GAP_PROMPT, GAP_REPORT_SCHEMA } from "@resumetailor/ai-pipeline"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), tracesSampleRate: 1.0 })
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -48,6 +51,7 @@ serve(async (req) => {
     )
   } catch (error: unknown) {
     console.error('[analyze-gap] Error:', error)
+    Sentry.captureException(error)
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }

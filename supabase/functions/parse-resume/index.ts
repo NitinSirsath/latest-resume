@@ -4,6 +4,9 @@ import mammoth from "npm:mammoth@1.8.0"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { PARSE_RESUME_PROMPT, RESUME_SECTIONS_SCHEMA } from "@resumetailor/ai-pipeline"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), tracesSampleRate: 1.0 })
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
