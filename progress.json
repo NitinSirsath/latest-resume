@@ -26,6 +26,7 @@
     { "id": "TASK-032", "phase": 3, "status": "complete", "file": "supabase/migrations/20260502010000_application_tracking.sql", "description": "Add application tracking (job URL + status)", "completedAt": "2026-05-02T01:35:00Z" },
     { "id": "TASK-033", "phase": 3, "status": "complete", "file": "scripts/test-pipeline.ts", "description": "Write integration tests for parse-resume and tailor-resume", "completedAt": "2026-05-02T01:36:00Z" },
     { "id": "TASK-040", "phase": 4, "status": "complete", "file": ".github/workflows/ci.yml", "description": "CI/CD via GitHub Actions", "completedAt": "2026-05-02T01:45:00Z" },
+    { "id": "TASK-042", "phase": 4, "status": "complete", "file": "apps/web/src/main.tsx", "description": "Error monitoring (Sentry)", "completedAt": "2026-05-02T15:00:00Z" },
     { "id": "TASK-043", "phase": 4, "status": "complete", "file": "supabase/migrations/20260502020000_usage_credits.sql", "description": "Usage limits enforcement via usage_credits table", "completedAt": "2026-05-02T01:45:00Z" }
   ]
 }

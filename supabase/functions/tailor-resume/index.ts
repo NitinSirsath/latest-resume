@@ -3,6 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "@resumetailor/ai-pipeline"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({
+  dsn: "https://3b4e9793c03b6cd0a01e3769400885de@o4511316837269504.ingest.us.sentry.io/4511319558455296",
+  tracesSampleRate: 1.0,
+})
 
 interface TailorResult {
   final_ats_score?: number;
@@ -192,6 +198,7 @@ STRICT RULES:
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[tailor-resume] Top-level error:', errorMessage)
+    Sentry.captureException(error)
     return new Response(
       JSON.stringify({ error: errorMessage, failedAt: 'tailor_pipeline_execution' }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -3,6 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { ANALYZE_JD_PROMPT, JD_ANALYSIS_SCHEMA } from "@resumetailor/ai-pipeline"
+import * as Sentry from "npm:@sentry/deno"
+
+Sentry.init({
+  dsn: "https://3b4e9793c03b6cd0a01e3769400885de@o4511316837269504.ingest.us.sentry.io/4511319558455296",
+  tracesSampleRate: 1.0,
+})
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -92,6 +98,7 @@ serve(async (req) => {
     )
   } catch (error: unknown) {
     console.error('[analyze-jd] Error:', error)
+    Sentry.captureException(error)
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }

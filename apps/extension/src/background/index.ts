@@ -4,6 +4,12 @@ import { jobDescriptionSchema } from '@resumetailor/ai-pipeline'
 import { supabase } from '../lib/supabase'
 import { chromeStorage } from '../lib/chrome-storage'
 import { Session } from '@supabase/supabase-js'
+import * as Sentry from "@sentry/browser"
+
+Sentry.init({
+  dsn: "https://3b4e9793c03b6cd0a01e3769400885de@o4511316837269504.ingest.us.sentry.io/4511319558455296",
+  tracesSampleRate: 1.0,
+})
 
 const { onMessage } = defineExtensionMessaging<ExtensionMessaging>()
 
