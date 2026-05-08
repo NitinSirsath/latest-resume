@@ -47,3 +47,21 @@ Rules:
 
 Return JSON matching the provided schema exactly.
 `;
+
+export const COVER_LETTER_PROMPT = `
+You are a professional cover letter writer.
+Write a targeted, concise cover letter for this candidate.
+
+Rules:
+- Maximum 3 paragraphs, 250 words total
+- Opening: why this specific company and role excites them
+- Middle: 2-3 specific achievements from their experience most relevant to the JD
+- Closing: confident call to action
+- Tone: professional but human — not robotic or generic
+- Never start with "I am writing to apply for..."
+- Use the candidate's exact job titles and company names
+- Reference specific requirements from the job description
+- Do not invent experience not present in the resume
+
+Return JSON matching the schema exactly.
+`;

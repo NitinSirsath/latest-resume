@@ -134,3 +134,14 @@ export const RESUME_SECTIONS_SCHEMA = {
   },
   required: ["summary", "experience", "skills", "education"]
 };
+
+export const COVER_LETTER_SCHEMA = {
+  type: "object",
+  properties: {
+    subject_line: { type: "string" },
+    body: { type: "string" },
+    word_count: { type: "integer" },
+    keywords_used: { type: "array", items: { type: "string" } }
+  },
+  required: ["subject_line", "body", "word_count", "keywords_used"]
+};
