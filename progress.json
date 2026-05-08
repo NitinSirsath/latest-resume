@@ -1,32 +1,255 @@
 {
   "lastUpdated": "2026-05-02T00:27:00Z",
   "currentPhase": 1,
-  "overallStatus": "IN_PROGRESS",
+  "overallStatus": "COMPLETED",
   "phases": {
-    "1": { "name": "Output Quality Foundation", "status": "COMPLETED", "completedTasks": 4, "totalTasks": 4 },
-    "2": { "name": "Diff Review System", "status": "COMPLETED", "completedTasks": 6, "totalTasks": 6 },
-    "3": { "name": "Polish & Reliability", "status": "COMPLETED", "completedTasks": 4, "totalTasks": 4 },
-    "4": { "name": "Production", "status": "PENDING", "completedTasks": 0, "totalTasks": 4 }
+    "1": {
+      "name": "Output Quality Foundation",
+      "status": "COMPLETED",
+      "completedTasks": 4,
+      "totalTasks": 4
+    },
+    "2": {
+      "name": "Diff Review System",
+      "status": "COMPLETED",
+      "completedTasks": 6,
+      "totalTasks": 6
+    },
+    "3": {
+      "name": "Polish & Reliability",
+      "status": "COMPLETED",
+      "completedTasks": 4,
+      "totalTasks": 4
+    },
+    "4": {
+      "name": "Production",
+      "status": "PENDING",
+      "completedTasks": 1,
+      "totalTasks": 4
+    },
+    "5": {
+      "name": "Security & Hardening",
+      "status": "COMPLETED",
+      "completedTasks": 7,
+      "totalTasks": 8
+    }
   },
   "tasks": [
-    { "id": "TASK-009", "phase": 1, "status": "complete", "file": "supabase/config.toml", "description": "Fix Deno/Node Package Boundary", "completedAt": "2026-05-02T01:05:00Z" },
-    { "id": "TASK-010-new", "phase": 1, "status": "complete", "file": "supabase/functions/parse-resume/index.ts", "description": "Replace Regex Parser with Gemini-Based Extraction", "completedAt": "2026-05-02T01:07:00Z" },
-    { "id": "TASK-010", "phase": 1, "status": "complete", "file": "packages/ai-pipeline/src/prompts.ts", "description": "Upgrade TAILOR_RESUME_PROMPT with quality constraints", "completedAt": "2026-05-02T00:31:00Z" },
-    { "id": "TASK-011", "phase": 1, "status": "complete", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add post-AI validation layer", "completedAt": "2026-05-02T00:50:00Z" },
-    { "id": "TASK-012", "phase": 1, "status": "complete", "file": "supabase/functions/tailor-resume/index.ts", "description": "Add change_id to every change_log entry", "completedAt": "2026-05-02T00:52:00Z" },
-    { "id": "TASK-013", "phase": 1, "status": "complete", "file": "packages/ai-pipeline/src/schemas.ts", "description": "Add reason and impact fields to change schema", "completedAt": "2026-05-02T00:55:00Z" },
-    { "id": "TASK-020", "phase": 2, "status": "complete", "file": "supabase/functions/review-changes/index.ts", "description": "Create review-changes edge function for AI alternatives", "completedAt": "2026-05-02T00:58:00Z" },
-    { "id": "TASK-021", "phase": 2, "status": "complete", "file": "packages/ui/src/components/DiffCard.tsx", "description": "Create DiffCard component with GitHub-style diff", "completedAt": "2026-05-02T01:00:00Z" },
-    { "id": "TASK-022", "phase": 2, "status": "complete", "file": "packages/ui/src/components/DiffReviewPanel.tsx", "description": "Create DiffReviewPanel with accept/reject controls", "completedAt": "2026-05-02T01:10:00Z" },
-    { "id": "TASK-023", "phase": 2, "status": "complete", "file": "supabase/functions/write-docx/index.ts", "description": "Update write-docx to apply only accepted changes", "completedAt": "2026-05-02T01:12:00Z" },
-    { "id": "TASK-024", "phase": 2, "status": "complete", "file": "apps/web/src/routes/review.$id.tsx", "description": "Add diff review route in web dashboard", "completedAt": "2026-05-02T01:14:00Z" },
-    { "id": "TASK-025", "phase": 2, "status": "complete", "file": "apps/extension/src/popup/", "description": "Add Review Changes state in extension popup", "completedAt": "2026-05-02T01:17:00Z" },
-    { "id": "TASK-030", "phase": 3, "status": "complete", "file": "apps/extension/src/popup/components/Dashboard.tsx", "description": "Add retry UI for failed pipeline steps", "completedAt": "2026-05-02T01:30:00Z" },
-    { "id": "TASK-031", "phase": 3, "status": "complete", "file": "apps/web/src/routes/dashboard.tsx", "description": "Add resume version history in dashboard", "completedAt": "2026-05-02T01:30:00Z" },
-    { "id": "TASK-032", "phase": 3, "status": "complete", "file": "supabase/migrations/20260502010000_application_tracking.sql", "description": "Add application tracking (job URL + status)", "completedAt": "2026-05-02T01:35:00Z" },
-    { "id": "TASK-033", "phase": 3, "status": "complete", "file": "scripts/test-pipeline.ts", "description": "Write integration tests for parse-resume and tailor-resume", "completedAt": "2026-05-02T01:36:00Z" },
-    { "id": "TASK-040", "phase": 4, "status": "complete", "file": ".github/workflows/ci.yml", "description": "CI/CD via GitHub Actions", "completedAt": "2026-05-02T01:45:00Z" },
-    { "id": "TASK-042", "phase": 4, "status": "complete", "file": "apps/web/src/main.tsx", "description": "Error monitoring (Sentry)", "completedAt": "2026-05-02T15:00:00Z" },
-    { "id": "TASK-043", "phase": 4, "status": "complete", "file": "supabase/migrations/20260502020000_usage_credits.sql", "description": "Usage limits enforcement via usage_credits table", "completedAt": "2026-05-02T01:45:00Z" }
+    {
+      "id": "TASK-009",
+      "phase": 1,
+      "status": "complete",
+      "file": "supabase/config.toml",
+      "description": "Fix Deno/Node Package Boundary",
+      "completedAt": "2026-05-02T01:05:00Z"
+    },
+    {
+      "id": "TASK-010-new",
+      "phase": 1,
+      "status": "complete",
+      "file": "supabase/functions/parse-resume/index.ts",
+      "description": "Replace Regex Parser with Gemini-Based Extraction",
+      "completedAt": "2026-05-02T01:07:00Z"
+    },
+    {
+      "id": "TASK-010",
+      "phase": 1,
+      "status": "complete",
+      "file": "packages/ai-pipeline/src/prompts.ts",
+      "description": "Upgrade TAILOR_RESUME_PROMPT with quality constraints",
+      "completedAt": "2026-05-02T00:31:00Z"
+    },
+    {
+      "id": "TASK-011",
+      "phase": 1,
+      "status": "complete",
+      "file": "supabase/functions/tailor-resume/index.ts",
+      "description": "Add post-AI validation layer",
+      "completedAt": "2026-05-02T00:50:00Z"
+    },
+    {
+      "id": "TASK-012",
+      "phase": 1,
+      "status": "complete",
+      "file": "supabase/functions/tailor-resume/index.ts",
+      "description": "Add change_id to every change_log entry",
+      "completedAt": "2026-05-02T00:52:00Z"
+    },
+    {
+      "id": "TASK-013",
+      "phase": 1,
+      "status": "complete",
+      "file": "packages/ai-pipeline/src/schemas.ts",
+      "description": "Add reason and impact fields to change schema",
+      "completedAt": "2026-05-02T00:55:00Z"
+    },
+    {
+      "id": "TASK-020",
+      "phase": 2,
+      "status": "complete",
+      "file": "supabase/functions/review-changes/index.ts",
+      "description": "Create review-changes edge function for AI alternatives",
+      "completedAt": "2026-05-02T00:58:00Z"
+    },
+    {
+      "id": "TASK-021",
+      "phase": 2,
+      "status": "complete",
+      "file": "packages/ui/src/components/DiffCard.tsx",
+      "description": "Create DiffCard component with GitHub-style diff",
+      "completedAt": "2026-05-02T01:00:00Z"
+    },
+    {
+      "id": "TASK-022",
+      "phase": 2,
+      "status": "complete",
+      "file": "packages/ui/src/components/DiffReviewPanel.tsx",
+      "description": "Create DiffReviewPanel with accept/reject controls",
+      "completedAt": "2026-05-02T01:10:00Z"
+    },
+    {
+      "id": "TASK-023",
+      "phase": 2,
+      "status": "complete",
+      "file": "supabase/functions/write-docx/index.ts",
+      "description": "Update write-docx to apply only accepted changes",
+      "completedAt": "2026-05-02T01:12:00Z"
+    },
+    {
+      "id": "TASK-024",
+      "phase": 2,
+      "status": "complete",
+      "file": "apps/web/src/routes/review.$id.tsx",
+      "description": "Add diff review route in web dashboard",
+      "completedAt": "2026-05-02T01:14:00Z"
+    },
+    {
+      "id": "TASK-025",
+      "phase": 2,
+      "status": "complete",
+      "file": "apps/extension/src/popup/",
+      "description": "Add Review Changes state in extension popup",
+      "completedAt": "2026-05-02T01:17:00Z"
+    },
+    {
+      "id": "TASK-030",
+      "phase": 3,
+      "status": "complete",
+      "file": "apps/extension/src/popup/components/Dashboard.tsx",
+      "description": "Add retry UI for failed pipeline steps",
+      "completedAt": "2026-05-02T01:30:00Z"
+    },
+    {
+      "id": "TASK-031",
+      "phase": 3,
+      "status": "complete",
+      "file": "apps/web/src/routes/dashboard.tsx",
+      "description": "Add resume version history in dashboard",
+      "completedAt": "2026-05-02T01:30:00Z"
+    },
+    {
+      "id": "TASK-032",
+      "phase": 3,
+      "status": "complete",
+      "file": "supabase/migrations/20260502010000_application_tracking.sql",
+      "description": "Add application tracking (job URL + status)",
+      "completedAt": "2026-05-02T01:35:00Z"
+    },
+    {
+      "id": "TASK-033",
+      "phase": 3,
+      "status": "complete",
+      "file": "scripts/test-pipeline.ts",
+      "description": "Write integration tests for parse-resume and tailor-resume",
+      "completedAt": "2026-05-02T01:36:00Z"
+    },
+    {
+      "id": "TASK-040",
+      "phase": 4,
+      "status": "complete",
+      "file": ".github/workflows/ci.yml",
+      "description": "CI/CD via GitHub Actions",
+      "completedAt": "2026-05-02T01:45:00Z"
+    },
+    {
+      "id": "TASK-042",
+      "phase": 4,
+      "status": "complete",
+      "file": "apps/web/src/main.tsx",
+      "description": "Error monitoring (Sentry)",
+      "completedAt": "2026-05-02T15:00:00Z"
+    },
+    {
+      "id": "TASK-043",
+      "phase": 4,
+      "status": "complete",
+      "file": "supabase/migrations/20260502020000_usage_credits.sql",
+      "description": "Usage limits enforcement via usage_credits table",
+      "completedAt": "2026-05-02T01:45:00Z"
+    },
+    {
+      "id": "TASK-050",
+      "phase": 5,
+      "status": "complete",
+      "file": "supabase/functions/write-docx/index.ts",
+      "description": "Fix DOCX Output: Formatting is Destroyed",
+      "completedAt": "2026-05-08T20:35:45.748Z"
+    },
+    {
+      "id": "TASK-051",
+      "phase": 5,
+      "status": "complete",
+      "file": "apps/extension/src/background/index.ts",
+      "description": "Fix Extension Tailoring Flow: Disconnected Orchestration",
+      "completedAt": "2026-05-08T20:36:36.849Z"
+    },
+    {
+      "id": "TASK-052",
+      "phase": 5,
+      "status": "complete",
+      "file": "apps/extension/src/background/index.ts",
+      "description": "Missing MANUAL_DETECT Handler in Background",
+      "completedAt": "2026-05-08T20:36:36.855Z"
+    },
+    {
+      "id": "TASK-054",
+      "phase": 5,
+      "status": "complete",
+      "file": "apps/web/src/routes/__root.tsx",
+      "description": "Auth Guard on Protected Web Routes",
+      "completedAt": "2026-05-08T20:38:38.201Z"
+    },
+    {
+      "id": "TASK-053",
+      "phase": 5,
+      "status": "complete",
+      "file": "supabase/functions/export-resume/index.ts",
+      "description": "Deprecate/Fix export-resume Edge Function",
+      "completedAt": "2026-05-08T20:39:16.228Z"
+    },
+    {
+      "id": "TASK-055",
+      "phase": 5,
+      "status": "complete",
+      "file": "packages/shared/src/index.ts",
+      "description": "Deduplicate Supabase Client into packages/shared",
+      "completedAt": "2026-05-08T20:39:57.568Z"
+    },
+    {
+      "id": "TASK-056",
+      "phase": 5,
+      "status": "complete",
+      "file": "supabase/functions/*/index.ts",
+      "description": "Input Validation on Edge Functions",
+      "completedAt": "2026-05-08T20:41:05.649Z"
+    },
+    {
+      "id": "TASK-041",
+      "phase": 4,
+      "status": "complete",
+      "file": "supabase/functions/convert-pdf/index.ts",
+      "description": "CloudConvert Integration (DOCX -> PDF)",
+      "completedAt": "2026-05-08T20:43:00.714Z"
+    }
   ]
 }
