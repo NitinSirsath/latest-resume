@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
 import { DiffReviewPanel, ReviewDecisionType, ChangeItem } from '@resumetailor/ui'
-import { useAuthStore } from '../store/auth'
+import { useAuthStore } from '../../store/auth'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@resumetailor/ui'
 
-export const Route = createFileRoute('/review/$id')({
+export const Route = createFileRoute('/_protected/review/$id')({
   component: ReviewPage,
 })
 

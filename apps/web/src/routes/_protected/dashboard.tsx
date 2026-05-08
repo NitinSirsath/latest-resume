@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { useAuthStore } from '../store/auth'
+import { supabase } from '../../lib/supabase'
+import { useAuthStore } from '../../store/auth'
 import { useRef, useState } from 'react'
 import { 
   Button, 
@@ -14,7 +14,7 @@ import {
 import { FileText, History, ExternalLink, Calendar, Trash2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/dashboard')({
+export const Route = createFileRoute('/_protected/dashboard')({
   component: Dashboard,
 })
 
