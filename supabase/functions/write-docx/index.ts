@@ -86,6 +86,13 @@ serve(async (req) => {
 
   try {
     const { tailored_resume_id, user_id, decisions } = await req.json()
+
+    if (!tailored_resume_id || !user_id || !decisions) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: tailored_resume_id, user_id, decisions", code: "VALIDATION_ERROR" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!

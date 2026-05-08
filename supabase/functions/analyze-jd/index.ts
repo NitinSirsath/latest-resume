@@ -19,6 +19,13 @@ serve(async (req) => {
   try {
     const req_json = await req.json()
     const { jd_text, user_id } = req_json
+
+    if (!jd_text || !user_id) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: jd_text, user_id", code: "VALIDATION_ERROR" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
     
     // 1. Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!

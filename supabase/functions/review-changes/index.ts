@@ -14,6 +14,13 @@ serve(async (req) => {
   try {
     const { change_id, tailored_resume_id, accepted, user_id } = await req.json()
 
+    if (!change_id || !tailored_resume_id || !user_id) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: change_id, tailored_resume_id, user_id", code: "VALIDATION_ERROR" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
     if (accepted !== false) {
       return new Response(
         JSON.stringify({ error: "Only rejected changes require alternatives", code: "INVALID_REQUEST" }),
