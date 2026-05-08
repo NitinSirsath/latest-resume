@@ -11,8 +11,10 @@ import { ExtensionMessaging } from '@resumetailor/types'
 import { StorageContext } from '../../lib/chrome-storage'
 import { useTailorMutation } from '../hooks/useTailorMutation'
 import { useExportMutation } from '../hooks/useExportMutation'
-import { CheckCircle2, AlertCircle, Loader2, Sparkles, Download, Search } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, Sparkles, Download, Search, Zap } from 'lucide-react'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../../lib/supabase'
 
 const { sendMessage } = defineExtensionMessaging<ExtensionMessaging>()
 
@@ -27,6 +29,21 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
   const exportMutation = useExportMutation()
   const [manualDetecting, setManualDetecting] = useState(false)
   const [detectError, setDetectError] = useState<string | null>(null)
+
+  const { data: creditsData } = useQuery({
+    queryKey: ['usage_credits', session.user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('usage_credits')
+        .select('credits_remaining, plan')
+        .eq('user_id', session.user.id)
+        .single()
+      if (error && error.code !== 'PGRST116') throw error
+      return data || { credits_remaining: 0, plan: 'free' }
+    }
+  })
+
+  const credits = creditsData?.credits_remaining ?? 0
 
   const handleSignOut = async () => {
     await sendMessage('LOGOUT', undefined)
@@ -85,6 +102,12 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {creditsData && (
+            <Badge variant={credits > 0 ? "secondary" : "destructive"} className="text-[9px] px-1.5 py-0">
+              <Zap className="w-2.5 h-2.5 mr-0.5" />
+              {credits} {credits === 1 ? 'cr' : 'cr'}
+            </Badge>
+          )}
           <ThemeToggle />
           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -170,13 +193,26 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
                     </Badge>
                   </div>
                   <Button 
-                    onClick={() => tailorMutation.mutate()} 
+                    onClick={() => {
+                      if (credits <= 0) {
+                        const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5173'
+                        window.open(`${dashboardUrl}/billing`, '_blank')
+                      } else {
+                        tailorMutation.mutate()
+                      }
+                    }} 
                     size="sm"
-                    className="w-full h-7 text-[10px]"
+                    className={`w-full h-7 text-[10px] ${credits <= 0 ? 'bg-red-600 hover:bg-red-700' : ''}`}
                   >
-                    <Sparkles className="w-3 h-3 mr-1.5" />
-                    Optimize Resume
+                    {credits <= 0 ? (
+                      <>No credits left. Tap to upgrade →</>
+                    ) : (
+                      <><Sparkles className="w-3 h-3 mr-1.5" /> Optimize Resume</>
+                    )}
                   </Button>
+                  {credits === 1 && (
+                    <p className="text-[9px] text-amber-600 font-bold uppercase mt-2">⚠️ 1 credit remaining</p>
+                  )}
                   
                   {tailorMutation.isError && (
                     <div className="p-2 bg-red-500/5 border border-red-500/10 text-red-500 text-[9px] rounded flex gap-2 items-start font-bold uppercase">
