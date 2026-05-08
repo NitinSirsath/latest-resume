@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import mammoth from "npm:mammoth@1.8.0"
-import { Document, Packer, Paragraph, TextRun } from "npm:docx@9.0.2"
+import JSZip from "npm:jszip@3.10.1"
 import { corsHeaders } from "../_shared/cors.ts"
 import * as Sentry from "npm:@sentry/deno"
 
@@ -26,6 +25,60 @@ interface ChangeLogEntry {
   impact: string;
 }
 
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function unescapeXml(text: string): string {
+  return text
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;/g, '&')
+}
+
+/**
+ * Replace text within DOCX XML while preserving all formatting.
+ * Works paragraph-by-paragraph: concatenates <w:t> text within each <w:p>,
+ * checks for a match, then redistributes replacement text into the first
+ * run and clears subsequent runs.
+ */
+function replaceTextInDocXml(xml: string, searchText: string, replaceText: string): string {
+  return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, (paragraph) => {
+    const tElements: Array<{ fullMatch: string; text: string; index: number }> = []
+    const tRegex = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g
+    let m
+    while ((m = tRegex.exec(paragraph)) !== null) {
+      tElements.push({ fullMatch: m[0], text: unescapeXml(m[1]), index: m.index })
+    }
+
+    if (tElements.length === 0) return paragraph
+
+    const fullText = tElements.map(e => e.text).join('')
+    if (!fullText.includes(searchText)) return paragraph
+
+    // Perform replacement on concatenated text, redistribute into runs
+    const newFullText = fullText.replace(searchText, replaceText)
+    let result = paragraph
+
+    // Process from end to start so indices stay valid
+    for (let i = tElements.length - 1; i >= 0; i--) {
+      const elem = tElements[i]
+      const newText = i === 0 ? escapeXml(newFullText) : ''
+      const newElement = `<w:t xml:space="preserve">${newText}</w:t>`
+      result = result.substring(0, elem.index) + newElement + result.substring(elem.index + elem.fullMatch.length)
+    }
+
+    return result
+  })
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -33,7 +86,7 @@ serve(async (req) => {
 
   try {
     const { tailored_resume_id, user_id, decisions } = await req.json()
-    
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!!
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -50,12 +103,11 @@ serve(async (req) => {
 
     console.log('[write-docx] base_resume_id:', tailoredData.base_resume_id)
 
-    // Get file_url: prefer FK join result, fallback to direct lookup, fallback to latest user resume
+    // Get file_url: prefer FK join, fallback to direct lookup, fallback to latest
     const joinedResumes = tailoredData.resumes as { file_url?: string } | undefined
     let fileUrl = joinedResumes?.file_url
 
     if (!fileUrl && tailoredData.base_resume_id) {
-      // Direct lookup using FK
       const { data: resumeData } = await supabase
         .from('resumes')
         .select('file_url')
@@ -65,8 +117,7 @@ serve(async (req) => {
     }
 
     if (!fileUrl) {
-      // Last resort: use the user's most recently uploaded resume
-      console.log('[write-docx] base_resume_id is null, falling back to latest resume for user:', user_id)
+      console.log('[write-docx] Falling back to latest resume for user:', user_id)
       const { data: latestResume } = await supabase
         .from('resumes')
         .select('file_url')
@@ -82,47 +133,40 @@ serve(async (req) => {
     const response = await fetch(fileUrl)
     if (!response.ok) throw new Error("Failed to download original DOCX")
     const arrayBuffer = await response.arrayBuffer()
-    const buffer = new Uint8Array(arrayBuffer)
 
-    // 3. Extract text, apply edits, build simple DOCX
-    const { value: rawText } = await mammoth.extractRawText({ arrayBuffer, buffer })
-    let modifiedText = rawText
+    // 3. Open DOCX as ZIP and modify document.xml in-place
+    const zip = await JSZip.loadAsync(arrayBuffer)
+    const docXmlFile = zip.file("word/document.xml")
+    if (!docXmlFile) throw new Error("Invalid DOCX: missing word/document.xml")
+
+    let docXml = await docXmlFile.async("string")
 
     const changeLog = (tailoredData.diff_json?.log as ChangeLogEntry[]) || []
     const typedDecisions = (decisions as ReviewDecision[]) || []
 
-    typedDecisions.forEach(decision => {
+    let appliedCount = 0
+    for (const decision of typedDecisions) {
       if (decision.accepted) {
         const logEntry = changeLog.find(l => l.change_id === decision.change_id)
-        if (logEntry && logEntry.original && decision.final_text) {
-          modifiedText = modifiedText.replace(logEntry.original, decision.final_text)
+        if (logEntry?.original && decision.final_text) {
+          const before = docXml
+          docXml = replaceTextInDocXml(docXml, logEntry.original, decision.final_text)
+          if (docXml !== before) appliedCount++
         }
       }
-    })
+    }
 
-    // 4. Build new DOCX
-    const paragraphs = modifiedText.split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => new Paragraph({
-        children: [new TextRun(line)]
-      }))
+    console.log(`[write-docx] Applied ${appliedCount} changes in-place`)
 
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: paragraphs
-      }]
-    })
-
-    const b64 = await Packer.toBase64String(doc)
-    const docxBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+    // 4. Write modified XML back to ZIP and generate output
+    zip.file("word/document.xml", docXml)
+    const outputBytes = await zip.generateAsync({ type: "uint8array" })
 
     // 5. Upload to Storage
     const fileName = `${user_id}/${tailored_resume_id}/tailored-resume.docx`
     const { error: uploadError } = await supabase.storage
       .from('outputs')
-      .upload(fileName, docxBytes, {
+      .upload(fileName, outputBytes, {
         contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         upsert: true
       })
@@ -149,6 +193,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[write-docx] Top-level error:', errorMessage)
+    Sentry.captureException(error)
     return new Response(
       JSON.stringify({ error: errorMessage, code: "INTERNAL_ERROR", failedAt: "write_docx_execution" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
