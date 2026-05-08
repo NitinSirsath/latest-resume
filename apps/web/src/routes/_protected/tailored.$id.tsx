@@ -12,7 +12,7 @@ import {
 } from '@resumetailor/ui'
 import { ChevronLeft, Download, FileCheck, ArrowRight, Info, Loader2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useExportMutation } from '../../hooks/useExportMutation'
+import { useExportMutation, usePdfExportMutation } from '../../hooks/useExportMutation'
 
 export const Route = createFileRoute('/_protected/tailored/$id')({
   component: TailoredDetail,
@@ -21,6 +21,7 @@ export const Route = createFileRoute('/_protected/tailored/$id')({
 function TailoredDetail() {
   const { id } = Route.useParams()
   const exportMutation = useExportMutation()
+  const exportPdfMutation = usePdfExportMutation()
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['tailored', id],
@@ -71,6 +72,17 @@ function TailoredDetail() {
           >
             {exportMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Download DOCX
+          </Button>
+          <Button 
+            onClick={() => exportPdfMutation.mutate({ 
+              tailored_id: detail.id, 
+              user_id: detail.user_id
+            })}
+            disabled={exportPdfMutation.isPending}
+            className="bg-red-600 hover:bg-red-700 gap-2"
+          >
+            {exportPdfMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Download PDF
           </Button>
         </div>
       </div>
