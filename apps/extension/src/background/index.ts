@@ -86,6 +86,100 @@ onMessage('START_ANALYSIS', async () => {
   runPipeline(context.activeJD, session.user.id)
 })
 
+// Orchestrate the tailoring step from the background
+onMessage('START_TAILOR', async () => {
+  console.log('[ResumeTailor] Manual tailoring triggered from popup')
+
+  const context = await chromeStorage.getContext()
+  if (!context?.analysis || !context?.activeJD || !context?.tailoredResumeId) {
+    console.error('[ResumeTailor] Missing context for tailoring')
+    return
+  }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await chromeStorage.updateContext({ status: 'PIPELINE_ERROR', error: 'Please sign in.' })
+    return
+  }
+
+  try {
+    await chromeStorage.updateContext({ status: 'LOADING', reasoning: 'Optimizing your resume...' })
+
+    // Fetch latest base resume
+    const { data: resumes, error: resumeError } = await supabase
+      .from('resumes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (resumeError) throw resumeError
+    if (!resumes || resumes.length === 0) throw new Error('No base resume found in vault.')
+    if (!resumes[0].parsed_json) throw new Error('Base resume not parsed yet. Re-upload.')
+
+    // Call tailor-resume edge function
+    const tailorData = await withRetry(() =>
+      supabase.functions.invoke('tailor-resume', {
+        body: {
+          base_resume_json: resumes[0].parsed_json,
+          base_resume_id: resumes[0].id,
+          gap_report: context.gapReport,
+          jd_analysis: context.analysis,
+          tailored_resume_id: context.tailoredResumeId
+        }
+      })
+    , 'tailor-resume')
+
+    await chromeStorage.updateContext({
+      status: 'COMPLETE',
+      reasoning: 'Tailoring complete!',
+      tailorResult: tailorData
+    })
+
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: '/icon-128.png',
+      title: 'Resume Ready!',
+      message: 'Your resume has been optimized. Click the extension to review!',
+      priority: 2
+    })
+  } catch (error: unknown) {
+    const err = error as Error & { step?: string }
+    console.error('[ResumeTailor] Tailor error:', err)
+    Sentry.captureException(err, { extra: { failedAt: 'tailor-resume' } })
+    await chromeStorage.updateContext({
+      status: 'PIPELINE_ERROR',
+      error: err.message || 'Tailoring failed',
+      failedAt: 'tailor-resume'
+    })
+  }
+})
+
+// Handle manual page scan request from popup
+onMessage('MANUAL_DETECT', async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) return { success: false, error: 'No active tab found' }
+
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        // Re-dispatch the content script detection event
+        window.dispatchEvent(new CustomEvent('RT_MANUAL_DETECT'))
+        return true
+      }
+    })
+
+    if (!results || results.length === 0) {
+      return { success: false, error: 'Cannot access this page. Try a job listing page.' }
+    }
+
+    return { success: true }
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : 'Detection failed'
+    return { success: false, error: errorMsg }
+  }
+})
+
 async function runPipeline(payload: JDPayload, userId: string) {
   try {
     await chromeStorage.setContext({ activeJD: payload, status: 'LOADING' })
