@@ -1,57 +1,36 @@
-# ResumeTailor — Technical Roadmap (Phased)
+# Tasks Roadmap — Next Phase
 
-This roadmap orchestrates the development of ResumeTailor through 5 distinct phases. Each phase builds upon the previous, ensuring a verifiable and iterative cycle.
+> Updated: 2026-05-09
 
-## Phases at a Glance
+## Dependency Graph
+```
+TASK-050 (DOCX formatting) ──► TASK-041 (CloudConvert PDF)
+                             ──► TASK-053 (Deprecate export-resume)
 
-| Phase | Goal | Key Task Files | Status |
-| :--- | :--- | :--- | :--- |
-| **Phase 1** | **AI Core & Pipelines** | `06-gemini-jd-analyser.md`, `07-gemini-tailor.md` | 🔄 In Progress |
-| **Phase 2** | **Extension Logic** | `05-content-scraper.md` (Update) | ⏸ Pending |
-| **Phase 3** | **Unified UI & State** | `08-popup-ui.md` | ⏸ Pending |
-| **Phase 4** | **Web Dashboard** | `09-web-dashboard.md` | ⏸ Pending |
-| **Phase 5** | **Export & Polish** | `10-pdf-export.md` | ⏸ Pending |
+TASK-051 (Tailor orchestration) ──► TASK-052 (MANUAL_DETECT handler)
 
----
+TASK-054 (Auth guards) — independent
 
-## Phase 1: AI Core & Pipelines
-*Focus: Getting the intelligence right before the UI.*
+TASK-055 (Shared client) ──► TASK-056 (Input validation)
+```
 
-- [ ] Implement Gemini Schemas in `packages/ai-pipeline/src/schemas.ts`
-- [ ] Implement Prompt Templates in `packages/ai-pipeline/src/prompts.ts`
-- [ ] Full implementation of `supabase/functions/analyze-jd`
-- [ ] Create `supabase/functions/analyze-gap`
-- [ ] Full implementation of `supabase/functions/tailor-resume`
-- [ ] Integration: Verified via `curl` tests.
+## Parallelizable Groups for Worktrees
 
-## Phase 2: Extension Intelligence
-*Focus: Orchestrating the data flow between Web and AI.*
+These groups have **zero file overlap** and can be worked on simultaneously:
 
-- [ ] Improve Scraper robustness (MutationObserver vs setTimeout).
-- [ ] Background message handler for `JD_SCRAPED` to trigger edge functions.
-- [ ] Chrome Storage caching for active JD and Analysis results.
+| Worktree | Branch | Tasks | Files Touched |
+|----------|--------|-------|---------------|
+| **wt-docx** | `feat/task-050-docx-formatting` | TASK-050 | `supabase/functions/write-docx/` |
+| **wt-extension** | `feat/task-051-tailor-orchestration` | TASK-051, TASK-052 | `apps/extension/src/background/`, `apps/extension/src/popup/hooks/`, `packages/types/` |
+| **wt-web** | `feat/task-054-auth-guards` | TASK-054 | `apps/web/src/routes/` |
+| **wt-infra** | `refactor/task-055-shared-client` | TASK-055 | `packages/shared/`, `apps/*/src/lib/supabase.ts` |
+| **wt-edge** | `feat/task-056-input-validation` | TASK-056 | `supabase/functions/*/index.ts` (⚠️ conflicts with wt-docx on write-docx) |
+| **wt-cleanup** | `fix/task-053-export-resume` | TASK-053 | `supabase/functions/export-resume/` |
+| **wt-pdf** | `feat/task-041-cloudconvert-pdf` | TASK-041 | New function + `apps/web/src/routes/review.$id.tsx` |
 
-## Phase 3: Unified UI & State
-*Focus: Building a premium, responsive popup experience.*
+> ⚠️ **wt-edge** (TASK-056) touches all edge functions including write-docx. Merge TASK-050 first.
 
-- [ ] Add missing shadcn components to `packages/ui`.
-- [ ] Implement Popup State Machine (LOADING → SIGNED_OUT → NO_RESUME → READY → TAILORING → DONE).
-- [ ] TanStack Query mutations for tailoring flow.
-
-## Phase 4: Web Experience
-*Focus: The "Resume Vault" and History.*
-
-- [ ] Implement `/dashboard` layout.
-- [ ] Resume upload & list view.
-- [ ] Side-by-side Diff Viewer for tailored results.
-
-## Phase 5: Export & Polish
-*Focus: High-fidelity output and final security check.*
-
-- [ ] PDF and DOCX generation edge functions.
-- [ ] Signed download URL logic.
-- [ ] Storage RLS policies for `outputs/`.
-- [ ] Performance audit & bundle size optimization.
-
----
-*Reference: Use pnpm typecheck at every phase increment.*
+## Priority Order
+1. 🔴 **P0** — TASK-050, TASK-051+052, TASK-054 (parallel worktrees)
+2. 🟡 **P1** — TASK-053, TASK-055, TASK-056 (after P0 merged)
+3. 🔵 **P2** — TASK-041 (after TASK-050 merged)
