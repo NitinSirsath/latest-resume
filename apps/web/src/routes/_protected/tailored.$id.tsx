@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { 
   Button, 
   Card, 
@@ -12,9 +12,9 @@ import {
 } from '@resumetailor/ui'
 import { ChevronLeft, Download, FileCheck, ArrowRight, Info, Loader2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useExportMutation } from '../hooks/useExportMutation'
+import { useExportMutation } from '../../hooks/useExportMutation'
 
-export const Route = createFileRoute('/tailored/$id')({
+export const Route = createFileRoute('/_protected/tailored/$id')({
   component: TailoredDetail,
 })
 
