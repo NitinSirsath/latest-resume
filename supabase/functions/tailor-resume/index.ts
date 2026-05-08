@@ -86,10 +86,12 @@ serve(async (req) => {
 
     if (!record?.user_id) throw new Error('Invalid tailored_resume_id')
 
-    const { data: usage, error: usageError } = await supabase
+    const user_id = record.user_id
+
+    const { data: credits, error: usageError } = await supabase
       .from('usage_credits')
-      .select('credits')
-      .eq('user_id', record.user_id)
+      .select('credits_remaining, plan')
+      .eq('user_id', user_id)
       .single()
 
     if (usageError && usageError.code !== 'PGRST116') {
@@ -97,8 +99,16 @@ serve(async (req) => {
       throw new Error('Failed to verify usage credits')
     }
 
-    if (usage && usage.credits <= 0) {
-      throw new Error('Insufficient credits. Please upgrade your plan.')
+    if (!credits || credits.credits_remaining <= 0) {
+      const dashboardUrl = Deno.env.get('DASHBOARD_URL') || 'http://localhost:3000'
+      return new Response(
+        JSON.stringify({ 
+          error: 'No credits remaining',
+          code: 'CREDITS_EXHAUSTED',
+          upgrade_url: `${dashboardUrl}/billing`
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // 2. Initialize Gemini
@@ -196,7 +206,10 @@ STRICT RULES:
     if (dbError) throw dbError
 
     // Decrement credits
-    await supabase.rpc('decrement_credits', { target_user_id: record.user_id })
+    await supabase
+      .from('usage_credits')
+      .update({ credits_remaining: credits.credits_remaining - 1 })
+      .eq('user_id', user_id)
 
     return new Response(
       JSON.stringify(tailorResult),
