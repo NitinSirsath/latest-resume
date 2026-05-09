@@ -20,4 +20,5 @@ export interface ExtensionMessaging {
   MANUAL_DETECT: () => { success: boolean; error?: string }
   START_ANALYSIS: () => void
   START_TAILOR: () => void
+  START_AUTOFILL: () => { success: boolean; error?: string }
 }

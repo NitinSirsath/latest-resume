@@ -1,6 +1,7 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import { ExtensionMessaging } from '@resumetailor/types';
 import { detectPortal, getAdapterForPortal } from './detector';
+import { performAutofill } from './autofill';
 
 const { sendMessage, onMessage } = defineExtensionMessaging<ExtensionMessaging>();
 
@@ -68,4 +69,11 @@ onMessage('MANUAL_DETECT', async () => {
   }
   const success = await attemptScrape(3); // Less retries for manual to fail fast
   return { success, error: success ? undefined : 'Could not find job details on this page.' };
+});
+
+onMessage('START_AUTOFILL', async () => {
+  console.log('[ResumeTailor] Autofill triggered');
+  // Data mapping will be handled in the next step (TASK-162)
+  const success = performAutofill({}); 
+  return { success };
 });
