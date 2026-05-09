@@ -1,12 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { GoogleGenerativeAI } from "https://esm.sh/@google/genai@0.1.2"
-import { INTERVIEW_PREP_PROMPT, INTERVIEW_PREP_SCHEMA } from "../../packages/ai-pipeline/src/index.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { GoogleGenerativeAI } from "npm:@google/generative-ai"
+import { corsHeaders } from "../_shared/cors.ts"
+import { INTERVIEW_PREP_PROMPT, INTERVIEW_PREP_SCHEMA } from "@resumetailor/ai-pipeline"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,10 +10,9 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
@@ -34,14 +29,26 @@ serve(async (req) => {
     }
 
     // 1. Check user credits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('id', user.id)
+    let { data: credits, error: creditsError } = await supabase
+      .from('usage_credits')
+      .select('credits_remaining, plan')
+      .eq('user_id', user.id)
       .single()
 
-    if (profileError) throw profileError
-    if (profile.credits < 1) {
+    if (creditsError && creditsError.code === 'PGRST116') {
+      // Auto-provision credits for existing users
+      const { data: newRow, error: insertError } = await supabase
+        .from('usage_credits')
+        .insert({ user_id: user.id, plan: 'free', credits_remaining: 5 })
+        .select('credits_remaining, plan')
+        .single()
+      if (insertError) throw new Error('Failed to verify usage credits')
+      credits = newRow
+    } else if (creditsError) {
+      throw creditsError
+    }
+
+    if (!credits || credits.credits_remaining < 1) {
       return new Response(JSON.stringify({ error: "Insufficient credits", code: "INSUFFICIENT_CREDITS" }), {
         status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -53,7 +60,7 @@ serve(async (req) => {
     // 2. Fetch Tailored Resume Data
     const { data: tailoredResume, error: fetchError } = await supabase
       .from('tailored_resumes')
-      .select('tailored_sections, job_title, company')
+      .select('diff_json, job_title, company, jd_analysis')
       .eq('id', tailored_resume_id)
       .eq('user_id', user.id)
       .single()
@@ -65,36 +72,33 @@ serve(async (req) => {
     console.log(`[generate-interview-prep] Generating interview prep using Gemini...`)
 
     // 3. Generate Interview Prep
-    const ai = new GoogleGenerativeAI({ apiKey: Deno.env.get('GEMINI_API_KEY') || '' })
-    
-    const content = `
-    Job Title: ${tailoredResume.job_title}
-    Company: ${tailoredResume.company}
-
-    Candidate Resume Context:
-    ${JSON.stringify(tailoredResume.tailored_sections, null, 2)}
-    `
-
-    const response = await ai.models.generateContent({
+    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!)
+    const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
-      contents: [{
-        role: "user",
-        parts: [{ text: INTERVIEW_PREP_PROMPT + '\n\n' + content }]
-      }],
-      config: {
+      generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: INTERVIEW_PREP_SCHEMA as any,
+        responseSchema: INTERVIEW_PREP_SCHEMA as never,
         temperature: 0.7,
       }
     })
 
-    if (!response.text) throw new Error("No response from AI")
+    const content = `
+    Job Title: ${tailoredResume.job_title}
+    Company: ${tailoredResume.company}
 
-    const prepJson = JSON.parse(response.text)
+    JD Analysis:
+    ${JSON.stringify(tailoredResume.jd_analysis, null, 2)}
+
+    Tailored Resume Changes:
+    ${JSON.stringify(tailoredResume.diff_json, null, 2)}
+    `
+
+    const result = await model.generateContent(INTERVIEW_PREP_PROMPT + '\n\n' + content)
+    const prepJson = JSON.parse(result.response.text())
 
     // 4. Update DB and decrement credits
     console.log(`[generate-interview-prep] Saving to database...`)
-    
+
     const { error: updateError } = await supabase
       .from('tailored_resumes')
       .update({ interview_prep_json: prepJson })
@@ -102,10 +106,10 @@ serve(async (req) => {
 
     if (updateError) throw updateError
 
-    const { error: creditError } = await supabase
-      .rpc('decrement_credits', { user_id: user.id, amount: 1 })
-
-    if (creditError) throw creditError
+    await supabase
+      .from('usage_credits')
+      .update({ credits_remaining: credits.credits_remaining - 1 })
+      .eq('user_id', user.id)
 
     console.log(`[generate-interview-prep] Success.`)
 
@@ -115,7 +119,7 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     console.error('[generate-interview-prep] Error:', error)
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Unknown error",
       code: "INTERNAL_ERROR"
     }), {

@@ -33,18 +33,31 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Check Usage Credits
-    const { data: usage, error: usageError } = await supabase
+    let { data: usage, error: usageError } = await supabase
       .from('usage_credits')
-      .select('credits')
+      .select('credits_remaining, plan')
       .eq('user_id', user_id)
       .single()
 
-    if (usageError && usageError.code !== 'PGRST116') { // PGRST116 is no rows returned
+    if (usageError && usageError.code === 'PGRST116') {
+      // User has no credits row — auto-provision one (existing user before trigger)
+      console.log('[analyze-jd] No credits row found, auto-provisioning for user:', user_id)
+      const { data: newRow, error: insertError } = await supabase
+        .from('usage_credits')
+        .insert({ user_id, plan: 'free', credits_remaining: 5 })
+        .select('credits_remaining, plan')
+        .single()
+      if (insertError) {
+        console.error('[analyze-jd] Failed to auto-provision credits:', insertError)
+        throw new Error('Failed to verify usage credits')
+      }
+      usage = newRow
+    } else if (usageError) {
       console.error('[analyze-jd] Usage check error:', usageError)
       throw new Error('Failed to verify usage credits')
     }
 
-    if (usage && usage.credits <= 0) {
+    if (usage && usage.credits_remaining <= 0) {
       throw new Error('Insufficient credits. Please upgrade your plan.')
     }
 
