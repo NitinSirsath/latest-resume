@@ -105,15 +105,16 @@ onMessage('START_TAILOR', async () => {
   try {
     await chromeStorage.updateContext({ status: 'LOADING', reasoning: 'Optimizing your resume...' })
 
-    // Fetch latest base resume
+    // Fetch latest base resume (prefer default)
     const { data: resumes, error: resumeError } = await supabase
       .from('resumes')
       .select('*')
+      .order('is_default', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(1)
 
     if (resumeError) throw resumeError
-    if (!resumes || resumes.length === 0) throw new Error('No base resume found in vault.')
+    if (!resumes || resumes.length === 0) throw new Error('No resume found. Upload and set a default resume in the dashboard.')
     if (!resumes[0].parsed_json) throw new Error('Base resume not parsed yet. Re-upload.')
 
     // Call tailor-resume edge function
@@ -212,11 +213,12 @@ async function runPipeline(payload: JDPayload, userId: string) {
     const { analysis, id: tailoredResumeId } = analysisData
     await chromeStorage.updateContext({ analysis, tailoredResumeId, reasoning: 'Analyzing your resume for the best match...' })
 
-    // Step 2: Fetch Base Resume
+    // Step 2: Fetch Base Resume (prefer default)
     console.log('[ResumeTailor] Fetching latest base resume...')
     const { data: resumes, error: resumeError } = await supabase
       .from('resumes')
       .select('*')
+      .order('is_default', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(1)
 
@@ -226,7 +228,7 @@ async function runPipeline(payload: JDPayload, userId: string) {
     }
     
     if (!resumes || resumes.length === 0) {
-      throw new Error('No resume found in your vault. Please upload a resume to the dashboard first!')
+      throw new Error('No resume found. Upload and set a default resume in the dashboard.')
     }
 
     const baseResume = resumes[0]
