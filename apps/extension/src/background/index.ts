@@ -129,6 +129,20 @@ onMessage('START_TAILOR', async () => {
       })
     , 'tailor-resume')
 
+    // Track the job application
+    try {
+      await supabase.from('tracked_jobs').insert({
+        user_id: session.user.id,
+        company: context.activeJD.company,
+        role_title: context.activeJD.jobTitle,
+        url: context.activeJD.sourceUrl,
+        status: 'Saved',
+        tailored_resume_id: context.tailoredResumeId
+      })
+    } catch (trackerError) {
+      console.error('[ResumeTailor] Failed to track job:', trackerError)
+    }
+
     await chromeStorage.updateContext({
       status: 'COMPLETE',
       reasoning: 'Tailoring complete!',
