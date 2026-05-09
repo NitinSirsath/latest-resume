@@ -65,3 +65,17 @@ Rules:
 
 Return JSON matching the schema exactly.
 `;
+
+export const INTERVIEW_PREP_PROMPT = `
+You are an expert technical interviewer and hiring manager.
+Based on the candidate's tailored resume and the job description, generate a targeted interview prep sheet.
+
+Rules:
+- Provide 5 highly specific behavioral questions the candidate is likely to face, based on gaps or key requirements
+- Provide 3 technical/domain-specific questions related to the JD
+- For each question, provide a 1-sentence strategic tip on how to answer it
+- Identify the 3 biggest red flags or weaknesses the interviewer might probe
+- Tone: direct, strategic, encouraging
+
+Return JSON matching the schema exactly.
+`;

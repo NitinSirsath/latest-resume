@@ -145,3 +145,25 @@ export const COVER_LETTER_SCHEMA = {
   },
   required: ["subject_line", "body", "word_count", "keywords_used"]
 };
+
+export const INTERVIEW_PREP_SCHEMA = {
+  type: "object",
+  properties: {
+    behavioral_questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { question: { type: "string" }, tip: { type: "string" } }
+      }
+    },
+    technical_questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { question: { type: "string" }, tip: { type: "string" } }
+      }
+    },
+    potential_weaknesses_probed: { type: "array", items: { type: "string" } }
+  },
+  required: ["behavioral_questions", "technical_questions", "potential_weaknesses_probed"]
+};
