@@ -1,6 +1,6 @@
 import { Session } from '@supabase/supabase-js'
 
-export type PortalType = 'linkedin' | 'naukri' | 'indeed' | 'wellfound' | 'unknown'
+export type PortalType = 'linkedin' | 'naukri' | 'indeed' | 'wellfound' | 'greenhouse' | 'lever' | 'workday' | 'unknown'
 
 export interface JDPayload {
   jobTitle: string
