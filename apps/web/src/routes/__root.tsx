@@ -73,6 +73,12 @@ function RootContent() {
                   >
                     Settings
                   </Link>
+                  <Link 
+                    to="/billing" 
+                    className="text-xs font-medium text-muted hover:text-primary transition-colors"
+                  >
+                    Billing
+                  </Link>
                   <div className="h-3 w-[1px] bg-border" />
                   <div className="flex items-center gap-2 text-muted">
                     <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-surface flex items-center justify-center border border-border">
