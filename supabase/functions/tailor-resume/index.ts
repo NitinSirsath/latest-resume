@@ -5,6 +5,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 import { TAILOR_RESUME_PROMPT, TAILORED_RESUME_SCHEMA } from "@resumetailor/ai-pipeline"
 import * as Sentry from "npm:@sentry/deno"
 import { checkRateLimit } from "../_shared/rate-limit.ts"
+import { trackEvent } from "../_shared/telemetry.ts"
 
 Sentry.init({
   dsn: Deno.env.get('SENTRY_DSN'),
@@ -219,6 +220,13 @@ STRICT RULES:
       .from('usage_credits')
       .update({ credits_remaining: credits.credits_remaining - 1 })
       .eq('user_id', user_id)
+
+    // Track event
+    await trackEvent(supabase, user_id, 'resume_tailored', {
+      job_title: jd_analysis.role_title,
+      score_delta: (tailorResult.final_ats_score || 0) - ((gap_report as any).ats_score_estimate || 0),
+      changes_count: tailorResult.change_log?.length || 0
+    });
 
     return new Response(
       JSON.stringify(tailorResult),
