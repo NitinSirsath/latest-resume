@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('[parse-resume] Calling Gemini to extract sections...')
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: RESUME_SECTIONS_SCHEMA as never

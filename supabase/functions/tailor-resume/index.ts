@@ -124,7 +124,7 @@ serve(async (req) => {
     // 2. Initialize Gemini
     const genAI = new GoogleGenerativeAI(Deno.env.get("GEMINI_API_KEY")!)
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-pro-latest", // Use Pro for complex constraints
+      model: "gemini-2.0-flash",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: TAILORED_RESUME_SCHEMA as never
