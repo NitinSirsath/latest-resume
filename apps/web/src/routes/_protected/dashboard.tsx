@@ -61,7 +61,8 @@ function Dashboard() {
           title: file.name.replace(/\.[^/.]+$/, ""),
           file_url: publicUrl,
           content: 'Pending analysis...', 
-          processing_status: 'pending'
+          processing_status: 'pending',
+          is_default: true // Making new upload the default
         })
         .select()
         .single()
@@ -138,11 +139,25 @@ function Dashboard() {
       const { data, error } = await supabase
         .from('resumes')
         .select('*')
+        .order('is_default', { ascending: false })
         .order('created_at', { ascending: false })
       if (error) throw error
       return data
     },
     enabled: !!user,
+  })
+
+  const setAsDefaultMutation = useMutation({
+    mutationFn: async (resumeId: string) => {
+      const { error } = await supabase
+        .from('resumes')
+        .update({ is_default: true })
+        .eq('id', resumeId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resumes'] })
+    }
   })
 
   // 2. Fetch Tailoring History with Pagination
@@ -215,7 +230,9 @@ function Dashboard() {
               <Card key={resume.id} className="group transition-all">
                 <CardHeader className="p-4 pb-1.5 flex flex-row items-center justify-between space-y-0">
                   <div className="font-bold text-sm truncate max-w-[120px]">{resume.title}</div>
-                  <Badge variant="secondary" className="scale-75 origin-right">Base</Badge>
+                  <Badge variant={resume.is_default ? "default" : "secondary"} className="scale-75 origin-right">
+                    {resume.is_default ? "Default" : "Base"}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="p-4 pt-1.5">
                   <div className="flex items-center gap-1.5 text-[9px] text-muted mb-4 font-bold uppercase tracking-tight">
@@ -228,6 +245,18 @@ function Dashboard() {
                         View
                       </a>
                     </Button>
+                    {!resume.is_default && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs hover:bg-primary/10"
+                        title="Set as Default"
+                        onClick={() => setAsDefaultMutation.mutate(resume.id)}
+                        disabled={setAsDefaultMutation.isPending}
+                      >
+                        Set Default
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
