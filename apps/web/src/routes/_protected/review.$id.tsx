@@ -21,6 +21,13 @@ function ReviewPage() {
   const [finalTexts, setFinalTexts] = useState<Record<string, string>>({})
   const [coverLetter, setCoverLetter] = useState<string>('')
   const [clSubject, setClSubject] = useState<string>('')
+  
+  interface InterviewPrepData {
+    behavioral_questions: Array<{ question: string; tip: string }>;
+    technical_questions: Array<{ question: string; tip: string }>;
+    potential_weaknesses_probed: string[];
+  }
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrepData | null>(null)
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['tailored', id],
@@ -83,6 +90,33 @@ function ReviewPage() {
     onSuccess: (data) => {
       setCoverLetter(data.body)
       setClSubject(data.subject_line)
+    },
+    onError: (err) => {
+      alert((err as Error).message)
+    }
+  })
+
+  const generateInterviewPrepMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not authenticated')
+      const { data: sessionData } = await supabase.auth.getSession()
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-interview-prep`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session?.access_token}`
+        },
+        body: JSON.stringify({ tailored_resume_id: id })
+      })
+
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to generate interview prep')
+      
+      return result.data as InterviewPrepData
+    },
+    onSuccess: (data) => {
+      setInterviewPrep(data)
     },
     onError: (err) => {
       alert((err as Error).message)
@@ -248,6 +282,80 @@ function ReviewPage() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="mt-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Interview Prep Sheet</h2>
+        
+        {/* If no prep, and not loading, check if it's already in DB detail? 
+            Wait, I'll just check if it exists in state or DB */}
+        {!interviewPrep && !detail?.interview_prep_json && !generateInterviewPrepMutation.isPending && (
+          <div className="flex flex-col items-center py-8">
+            <p className="text-slate-500 mb-4">Generate targeted interview questions and strategies.</p>
+            <Button 
+              onClick={() => generateInterviewPrepMutation.mutate()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Generate Interview Prep (1 Credit)
+            </Button>
+          </div>
+        )}
+
+        {generateInterviewPrepMutation.isPending && (
+          <div className="py-12 text-center animate-pulse text-indigo-500 font-medium">
+            Generating your interview prep...
+          </div>
+        )}
+
+        {(interviewPrep || detail?.interview_prep_json) && (() => {
+          const prep: InterviewPrepData = interviewPrep || detail?.interview_prep_json
+          return (
+            <div className="space-y-8 mt-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2 mb-4">
+                  Behavioral Questions
+                </h3>
+                <div className="space-y-4">
+                  {prep.behavioral_questions.map((q, idx) => (
+                    <div key={idx} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-md border border-slate-100 dark:border-slate-800">
+                      <p className="font-bold text-slate-900 dark:text-slate-100 mb-2">Q: {q.question}</p>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium flex gap-2">
+                        <span>Tip:</span> <span>{q.tip}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2 mb-4">
+                  Technical / Domain Questions
+                </h3>
+                <div className="space-y-4">
+                  {prep.technical_questions.map((q, idx) => (
+                    <div key={idx} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-md border border-slate-100 dark:border-slate-800">
+                      <p className="font-bold text-slate-900 dark:text-slate-100 mb-2">Q: {q.question}</p>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium flex gap-2">
+                        <span>Tip:</span> <span>{q.tip}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-red-800 dark:text-red-400 border-b border-red-200 dark:border-red-900/50 pb-2 mb-4">
+                  Potential Red Flags / Weaknesses
+                </h3>
+                <ul className="list-disc pl-5 space-y-2 text-slate-700 dark:text-slate-300">
+                  {prep.potential_weaknesses_probed.map((w, idx) => (
+                    <li key={idx}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
