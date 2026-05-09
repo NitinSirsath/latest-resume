@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 import { corsHeaders } from "../_shared/cors.ts"
 import { COVER_LETTER_PROMPT, COVER_LETTER_SCHEMA } from "@resumetailor/ai-pipeline"
 import * as Sentry from "npm:@sentry/deno"
+import { checkRateLimit } from "../_shared/rate-limit.ts"
 
 Sentry.init({
   dsn: Deno.env.get('SENTRY_DSN'),
@@ -49,6 +50,15 @@ serve(async (req) => {
           upgrade_url: `${dashboardUrl}/billing`
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Rate Limiting
+    const { allowed } = await checkRateLimit(supabase, user_id, 'generate-cover-letter', 10, 3600);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait an hour.", code: "RATE_LIMIT_EXCEEDED" }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
