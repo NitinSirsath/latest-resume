@@ -61,6 +61,18 @@ function RootContent() {
                   >
                     Dashboard
                   </Link>
+                  <Link 
+                    to="/tracker" 
+                    className="text-xs font-medium text-muted hover:text-primary transition-colors"
+                  >
+                    Tracker
+                  </Link>
+                  <Link 
+                    to="/settings" 
+                    className="text-xs font-medium text-muted hover:text-primary transition-colors"
+                  >
+                    Settings
+                  </Link>
                   <div className="h-3 w-[1px] bg-border" />
                   <div className="flex items-center gap-2 text-muted">
                     <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-surface flex items-center justify-center border border-border">
