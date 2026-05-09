@@ -1,5 +1,15 @@
 import { Session } from '@supabase/supabase-js'
 
+export interface AutofillData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
+}
+
 export type PortalType = 'linkedin' | 'naukri' | 'indeed' | 'wellfound' | 'greenhouse' | 'lever' | 'workday' | 'unknown'
 
 export interface JDPayload {
@@ -20,5 +30,5 @@ export interface ExtensionMessaging {
   MANUAL_DETECT: () => { success: boolean; error?: string }
   START_ANALYSIS: () => void
   START_TAILOR: () => void
-  START_AUTOFILL: () => { success: boolean; error?: string }
+  START_AUTOFILL: (data: AutofillData) => { success: boolean; error?: string }
 }

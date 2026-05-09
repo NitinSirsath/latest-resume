@@ -1,12 +1,4 @@
-export interface AutofillData {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  linkedin?: string;
-  github?: string;
-  portfolio?: string;
-}
+import { AutofillData } from '@resumetailor/types';
 
 const FIELD_SELECTORS = {
   firstName: ['input[name*="first_name"]', 'input[id*="first_name"]', 'input[placeholder*="First Name"]'],

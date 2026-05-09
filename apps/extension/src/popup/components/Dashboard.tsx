@@ -134,14 +134,48 @@ export function Dashboard({ session, context, onSignOut }: DashboardProps) {
               </div>
 
               {isIdle && (
-                <div className="pt-1">
+                <div className="pt-1 flex gap-2">
                    <Button 
                     onClick={() => sendMessage('START_ANALYSIS', undefined)} 
                     size="sm"
-                    className="w-full shadow-sm text-[10px] h-7"
+                    className="flex-1 shadow-sm text-[10px] h-7"
                   >
                     <Search className="w-3 h-3 mr-1.5" />
-                    Analyze & Compare
+                    Analyze
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      // Fetch default resume
+                      const { data: resume } = await supabase
+                        .from('resumes')
+                        .select('parsed_json')
+                        .eq('user_id', session.user.id)
+                        .eq('is_default', true)
+                        .single();
+                      
+                      if (resume?.parsed_json) {
+                        const json = resume.parsed_json as any;
+                        const data = {
+                          firstName: json.summary?.name?.split(' ')[0] || '',
+                          lastName: json.summary?.name?.split(' ').slice(1).join(' ') || '',
+                          email: json.summary?.email || '',
+                          phone: json.summary?.phone || '',
+                          linkedin: json.skills?.flat_list?.find((s: string) => s.includes('linkedin.com')) || '',
+                        };
+                        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                        if (tab?.id) {
+                          sendMessage('START_AUTOFILL', data, tab.id);
+                        }
+                      } else {
+                        alert('No default resume found. Please set one in the dashboard.');
+                      }
+                    }} 
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 shadow-sm text-[10px] h-7 border-indigo-500/30 text-indigo-600 hover:bg-indigo-500/10"
+                  >
+                    <Zap className="w-3 h-3 mr-1.5" />
+                    Autofill
                   </Button>
                 </div>
               )}
