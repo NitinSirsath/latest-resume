@@ -107,4 +107,35 @@ export class LinkedInAdapter implements BaseAdapter {
     }
     return [];
   }
+
+  getJobCards(): HTMLElement[] {
+    return Array.from(document.querySelectorAll('.jobs-search-results__list-item, .job-card-container'));
+  }
+
+  getCardData(card: HTMLElement): { title: string; company: string } {
+    const title = card.querySelector('.job-card-list__title, .job-card-container__link')?.textContent?.trim() || '';
+    const company = card.querySelector('.job-card-container__company-name, .job-card-list__item-subtitle')?.textContent?.trim() || '';
+    return { title, company };
+  }
+
+  injectScore(card: HTMLElement, score: number): void {
+    if (card.querySelector('.rt-match-badge')) return;
+    
+    const badge = document.createElement('div');
+    badge.className = 'rt-match-badge';
+    badge.style.display = 'inline-flex';
+    badge.style.alignItems = 'center';
+    badge.style.padding = '2px 6px';
+    badge.style.borderRadius = '4px';
+    badge.style.fontSize = '10px';
+    badge.style.fontWeight = 'bold';
+    badge.style.marginLeft = '8px';
+    badge.style.backgroundColor = score > 80 ? '#dcfce7' : score > 50 ? '#fef9c3' : '#fee2e2';
+    badge.style.color = score > 80 ? '#166534' : score > 50 ? '#854d0e' : '#991b1b';
+    badge.style.border = `1px solid ${score > 80 ? '#bbf7d0' : score > 50 ? '#fef08a' : '#fecaca'}`;
+    badge.innerHTML = `Match: ${score}%`;
+    
+    const target = card.querySelector('.job-card-list__title, .job-card-container__link');
+    target?.parentElement?.appendChild(badge);
+  }
 }

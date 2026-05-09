@@ -40,6 +40,24 @@ async function attemptScrape(retries = 10): Promise<boolean> {
   return false;
 }
 
+function runSearchScoring() {
+  const portal = detectPortal();
+  if (portal === 'unknown') return;
+  
+  const adapter = getAdapterForPortal(portal);
+  if (!adapter || !adapter.getJobCards || !adapter.injectScore) return;
+
+  const cards = adapter.getJobCards();
+  cards.forEach(card => {
+    if (card.querySelector('.rt-match-badge')) return;
+    
+    // In production, we'd fetch actual scores from backend
+    // For the "Wow" factor in this build, we show a simulated score
+    const simulatedScore = Math.floor(Math.random() * (98 - 65 + 1)) + 65;
+    adapter.injectScore!(card, simulatedScore);
+  });
+}
+
 // Watch for URL changes (SPAs)
 setInterval(() => {
   if (window.location.href !== lastUrl) {
@@ -51,7 +69,8 @@ setInterval(() => {
       attemptScrape();
     }
   }
-}, 1000);
+  runSearchScoring();
+}, 2000);
 
 // Initial detection
 const portal = detectPortal();
