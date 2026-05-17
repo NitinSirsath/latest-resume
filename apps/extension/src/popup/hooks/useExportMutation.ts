@@ -36,6 +36,8 @@ export function useExportMutation() {
         final_text: entry.changed_to
       }))
 
+      console.log('[ResumeTailor] Calling write-docx with', decisions.length, 'decisions')
+
       const { data, error } = await supabase.functions.invoke('write-docx', {
         body: {
           tailored_resume_id: tailored_id,
@@ -44,17 +46,37 @@ export function useExportMutation() {
         }
       })
 
+      console.log('[ResumeTailor] write-docx response:', JSON.stringify(data))
+
       if (error) throw error
       if (data && data.error) throw new Error(data.error)
-      return data.output_url // Public DOCX URL
+
+      // Handle both wrapped and unwrapped response formats
+      const outputUrl = data?.data?.output_url || data?.output_url
+      if (!outputUrl) throw new Error('No output URL returned from write-docx')
+
+      return outputUrl
     },
     onSuccess: (url: string) => {
+      console.log('[ResumeTailor] Download URL:', url)
       if (url) {
-        chrome.downloads.download({
-          url: url,
-          filename: 'tailored-resume.docx',
-          saveAs: true
-        })
+        // Use chrome.downloads if available, fallback to opening URL directly
+        if (chrome?.downloads?.download) {
+          chrome.downloads.download({
+            url: url,
+            filename: 'tailored-resume.docx',
+            saveAs: true
+          }, (downloadId) => {
+            if (chrome.runtime.lastError) {
+              console.warn('[ResumeTailor] chrome.downloads failed, opening URL directly:', chrome.runtime.lastError)
+              window.open(url, '_blank')
+            } else {
+              console.log('[ResumeTailor] Download started, id:', downloadId)
+            }
+          })
+        } else {
+          window.open(url, '_blank')
+        }
       }
     },
     onError: (error: Error) => {
